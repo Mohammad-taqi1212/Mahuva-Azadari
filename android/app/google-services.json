@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "396512434034",
+    "project_id": "fazadari",
+    "storage_bucket": "fazadari.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:396512434034:android:4f091ac721c1322d6fafeb",
+        "android_client_info": {
+          "package_name": "com.example.mahuva_azadari"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "396512434034-n2u7cuvljfb90m369usn6g70npjs8pse.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mahuva_azadari",
+            "certificate_hash": "6c87231f82260ed79da01ab9645d857de624f16e"
+          }
+        },
+        {
+          "client_id": "396512434034-nok39h20m61lggthitaqtt2r8aburjfi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvWElMPWVUriqrnXT4MKrhXntfO72J594"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "396512434034-nok39h20m61lggthitaqtt2r8aburjfi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
