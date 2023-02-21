@@ -1,19 +1,19 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:mahuva_azadari/Models/AdminPostModel.dart';
 import 'package:mahuva_azadari/Models/Hexa%20color.dart';
 import 'package:anim_search_bar/anim_search_bar.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:full_screen_image_null_safe/full_screen_image_null_safe.dart';
 import 'package:intl/intl.dart';
-import 'package:mahuva_azadari/Screens/Admin%20Data/AddPost.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../Models/getAdminPost.dart';
 import '../Drawer/Home.dart';
 import '../Post Edit/Edit userPost.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class AdminPost extends StatefulWidget {
   @override
@@ -22,7 +22,7 @@ class AdminPost extends StatefulWidget {
 
 class _AdminPostState extends State<AdminPost> {
 
-  late Stream<GetAdminPost> stream = Stream.periodic(Duration(seconds: 5))
+  late Stream<AdminPostModel> stream = Stream.periodic(Duration(seconds: 3))
       .asyncMap((event) async => await getCurrentAdminPost());
 
   String searchText = "";
@@ -32,23 +32,50 @@ class _AdminPostState extends State<AdminPost> {
   Color? ContainerColor;
   bool showSearchBar = false;
   bool showFlaotingButton = true;
+  var currentPage = 1;
 
+  AdminPostModel dummyData = AdminPostModel();
+  bool isRefersh = false;
+  final RefreshController refreshController = RefreshController();
 
-  Future<GetAdminPost> getCurrentAdminPost() async {
+  Future<AdminPostModel> getCurrentAdminPost() async {
     final SharedPreferences sharedPreferences =
         await SharedPreferences.getInstance();
     var getUserId = sharedPreferences.getString('currentUserid');
     print(getUserId);
-    var url = "https://aeliya.000webhostapp.com/AdminPost.php?id=$getUserId";
+    //https://aeliya.000webhostapp.com/AdminPost.php?id=106764933065187174744&pageNo=1
+    var url = "https://aeliya.000webhostapp.com/AdminPost.php?id=$getUserId&pageNo=$currentPage";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
+    var _apiData = AdminPostModel.fromJson(jsondata);
+
+    var newData = [...?dummyData.data, ...?_apiData.data];
 
     if (response.statusCode == 200) {
-      //print(jsondata);
-      //print(jsondata['data'.length]);
-      return GetAdminPost.fromJson(jsondata);
+
+      if(isRefersh == true){
+        setState((){
+          isRefersh = false;
+          searchController.text ="";
+        });
+        refreshController.refreshCompleted();
+      }
+      else{
+        if(currentPage == _apiData.pages){
+          refreshController.loadNoData();
+        }else{
+          refreshController.loadComplete();
+        }
+      }
+      final refids = newData.map((e) => e.refId).toSet();
+      newData.retainWhere((ids) => refids.remove(ids.refId));
+      //dummyData.data = newData.toSet().toList();
+      dummyData.data = newData;
+
+      return dummyData;
+
     } else {
-      return GetAdminPost.fromJson(jsondata);
+      return AdminPostModel.fromJson(jsondata);
     }
   }
 
@@ -77,7 +104,7 @@ class _AdminPostState extends State<AdminPost> {
                       textController: searchController
                         ..addListener(() {
                           setState(() {
-                            searchText = searchController.text;
+                            searchText = searchController.text.trim();
                           });
                         }),
                       closeSearchOnSuffixTap: true,
@@ -95,209 +122,242 @@ class _AdminPostState extends State<AdminPost> {
                   //child: Container()
                 ),
                 Expanded(
-                    child: StreamBuilder<GetAdminPost>(
+                    child: StreamBuilder<AdminPostModel>(
                   stream: stream,
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
-                      return ListView.builder(
+                      return SmartRefresher(
+                        controller: refreshController,
+                        enablePullUp: true,
+                        child: ListView.builder(
 
-                          //close keyboard while scroll
-                          keyboardDismissBehavior:
-                              ScrollViewKeyboardDismissBehavior.onDrag,
-                          itemCount: snapshot.data!.data!.length,
-                          itemBuilder: (context, i) {
-                            var postList = snapshot.data!.data![i];
-                            String tempSearch =
-                                postList.azakhanaName.toString();
+                            //close keyboard while scroll
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            itemCount: snapshot.data!.data!.length,
+                            itemBuilder: (context, i) {
+                              var postList = snapshot.data!.data![i];
+                              String tempSearch =
+                                  postList.azakhanaName.toString();
 
-                            // //for date comparison
-                            DateTime stdt = DateFormat('dd-MM-yyyy')
-                                .parse(postList.startDate.toString());
-                            DateTime endt = DateFormat('dd-MM-yyyy')
-                                .parse(postList.endDate.toString());
-                            DateTime crdt = DateTime.now();
+                              // //for date comparison
+                              DateTime stdt = DateFormat('dd-MM-yyyy')
+                                  .parse(postList.startDate.toString());
+                              DateTime endt = DateFormat('dd-MM-yyyy')
+                                  .parse(postList.endDate.toString());
+                              DateTime crdt = DateTime.now();
 
-                            final DateTime now = DateTime.now();
-                            final DateFormat formatter =
-                                DateFormat('dd-MM-yyyy');
-                            final String formatted = formatter.format(now);
-                            final crdt1 = DateTime.tryParse(formatted);
+                              final DateTime now = DateTime.now();
+                              final DateFormat formatter =
+                                  DateFormat('dd-MM-yyyy');
+                              final String formatted = formatter.format(now);
+                              final crdt1 = DateTime.tryParse(formatted);
 
-                            if (stdt.isBefore(crdt)) {
-                              //past
-                              if (endt.isBefore(crdt)) {
-                                ComparisonText = "Past";
-                                ContainerColor = Colors.red;
-                              } else if (endt.isAtSameMomentAs(crdt)) {
-                                ComparisonText = "Ongoing";
-                                ContainerColor = Colors.green;
+                              if (stdt.isBefore(crdt)) {
+                                //past
+                                if (endt.isBefore(crdt)) {
+                                  ComparisonText = "Past";
+                                  ContainerColor = Colors.red;
+                                } else if (endt.isAtSameMomentAs(crdt)) {
+                                  ComparisonText = "Ongoing";
+                                  ContainerColor = Colors.green;
+                                } else {
+                                  ComparisonText = "Ongoing";
+                                  ContainerColor = Colors.green;
+                                }
+                              } else if (stdt.isAfter(crdt)) {
+                                //upcoming
+                                ComparisonText = "Upcoming";
+                                ContainerColor = Colors.blue;
                               } else {
+                                //ongoing
                                 ComparisonText = "Ongoing";
                                 ContainerColor = Colors.green;
                               }
-                            } else if (stdt.isAfter(crdt)) {
-                              //upcoming
-                              ComparisonText = "Upcoming";
-                              ContainerColor = Colors.blue;
-                            } else {
-                              //ongoing
-                              ComparisonText = "Ongoing";
-                              ContainerColor = Colors.green;
-                            }
 
-                            if (searchController.text.isEmpty) {
-                              return Padding(
-                                padding: EdgeInsets.only(left: 5, right: 5),
-                                child: Card(
-                                  color: Color(hexColors("00BCD4")),
-                                  elevation: 6,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(10.0)),
-                                  child: Column(
-                                    children: [
-                                      ListTile(
-                                          leading: FullScreenWidget(
-                                              child: Container(
-                                                height: 50,
-                                                width: 50,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.rectangle,
-                                                  border: Border.all(color: Colors.black),
-                                                  color: Color(hexColors("84FFFF")),
+                              if (searchController.text.isEmpty) {
+                                return Padding(
+                                  padding: EdgeInsets.only(left: 5, right: 5),
+                                  child: Card(
+                                    color: Color(hexColors("00BCD4")),
+                                    elevation: 6,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10.0)),
+                                    child: Column(
+                                      children: [
+                                        ListTile(
+                                            leading: FullScreenWidget(
+                                                child: Container(
+                                                  height: 50,
+                                                  width: 50,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.rectangle,
+                                                    border: Border.all(color: Colors.black),
+                                                    color: Color(hexColors("84FFFF")),
+                                                  ),
+                                                  child: Image.network("https://aeliya.000webhostapp.com/"+postList.imagePath.toString()),
+                                                )),
+                                            title: Column(
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Scholar: ",
+                                                      Hdetail: postList.nameOfSchollar.toString(),),
+                                                  ],
                                                 ),
-                                                child: Image.network("https://aeliya.000webhostapp.com/"+postList.imagePath.toString()),
-                                              )),
-                                          title: Column(
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Program: ",
+                                                      Hdetail: postList.programList.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Date: ",
+                                                        Hdetail: "${postList.startDate} TO  ${postList.endDate}"),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Time: ",
+                                                      Hdetail: postList.time.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Azakhana: ",
+                                                      Hdetail: postList.azakhanaName.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "City: ",
+                                                      Hdetail: postList.cityName.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    Container(
+                                                      decoration: BoxDecoration(
+                                                          border: Border.all(
+                                                              color:
+                                                                  Colors.white),
+                                                          shape: BoxShape.circle),
+                                                      child: IconButton(
+                                                          onPressed: () {
+                                                            print("edit tap");
+                                                            var img = "https://aeliya.000webhostapp.com/${postList.imagePath!}";
+                                                            var progList = postList.programList;
+                                                            var stDate = postList.startDate;
+                                                            var endDate = postList.endDate;
+                                                            var time = postList.time;
+                                                            var azakhana = postList.azakhanaName;
+                                                            var scholar = postList.nameOfSchollar;
+                                                            var city = postList.cityName;
+                                                            var des = postList.description;
+                                                            var notes = postList.specialNotes;
+                                                            var refid = postList.refId;
+                                                            Navigator.push(context, MaterialPageRoute(builder: (context)=> EditUserPost(
+                                                              img,progList!,stDate!,endDate!,time!,azakhana!,scholar!,city!,des!,notes!,refid!
+                                                            )));
+                                                          },
+                                                          icon: Icon(
+                                                            Icons.edit,
+                                                            color: Colors.yellow,
+                                                          )),
+                                                    ),
+                                                    SizedBox(
+                                                      width: 5,
+                                                    ),
+                                                    Container(
+                                                      decoration: BoxDecoration(
+                                                          border: Border.all(
+                                                              color:
+                                                                  Colors.white),
+                                                          shape: BoxShape.circle),
+                                                      child: IconButton(
+                                                          onPressed: () {
+                                                            _showDeleteDialog(postList.refId,postList.imagePath);
+                                                          },
+                                                          icon: Icon(
+                                                            Icons.delete_forever,
+                                                            color: Colors.red,
+                                                          )),
+                                                    ),
+                                                  ],
+                                                )
+                                              ],
+                                            )),
+                                        ExpansionTile(
+                                          title: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Scholar: ",
-                                                    Hdetail: postList.nameOfSchollar.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Program: ",
-                                                    Hdetail: postList.programList.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Date: ",
-                                                      Hdetail: "${postList.startDate} TO  ${postList.endDate}"),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Time: ",
-                                                    Hdetail: postList.time.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Azakhana: ",
-                                                    Hdetail: postList.azakhanaName.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "City: ",
-                                                    Hdetail: postList.cityName.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color:
-                                                                Colors.white),
-                                                        shape: BoxShape.circle),
-                                                    child: IconButton(
-                                                        onPressed: () {
-                                                          print("edit tap");
-                                                          var img = "https://aeliya.000webhostapp.com/${postList.imagePath!}";
-                                                          var progList = postList.programList;
-                                                          var stDate = postList.startDate;
-                                                          var endDate = postList.endDate;
-                                                          var time = postList.time;
-                                                          var azakhana = postList.azakhanaName;
-                                                          var scholar = postList.nameOfSchollar;
-                                                          var city = postList.cityName;
-                                                          var des = postList.description;
-                                                          var notes = postList.specialNotes;
-                                                          var refid = postList.refId;
-                                                          Navigator.push(context, MaterialPageRoute(builder: (context)=> EditUserPost(
-                                                            img,progList!,stDate!,endDate!,time!,azakhana!,scholar!,city!,des!,notes!,refid!
-                                                          )));
-                                                        },
-                                                        icon: Icon(
-                                                          Icons.edit,
-                                                          color: Colors.yellow,
-                                                        )),
+                                              Container(
+                                                margin: EdgeInsets.all(5.0),
+                                                padding: EdgeInsets.all(5.0),
+                                                decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(10),
+                                                    border: Border.all(
+                                                        color: Colors.white),
+                                                    color: ContainerColor),
+                                                child: Text(
+                                                  ComparisonText,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    //backgroundColor: Colors.red
                                                   ),
-                                                  SizedBox(
-                                                    width: 5,
-                                                  ),
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color:
-                                                                Colors.white),
-                                                        shape: BoxShape.circle),
-                                                    child: IconButton(
-                                                        onPressed: () {
-                                                          print("delete tap");
-                                                          _showDeleteDialog(postList.refId);
-                                                        },
-                                                        icon: Icon(
-                                                          Icons.delete_forever,
-                                                          color: Colors.red,
-                                                        )),
-                                                  ),
-                                                ],
-                                              )
+                                                ),
+                                              ),
+                                              Text(
+                                                "Description:",
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontStyle: FontStyle.italic,
+                                                    decoration:
+                                                        TextDecoration.underline),
+                                              ),
                                             ],
-                                          )),
-                                      ExpansionTile(
-                                        title: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                          ),
+                                          iconColor: Colors.white,
                                           children: [
                                             Container(
+                                              width: double.infinity,
                                               margin: EdgeInsets.all(5.0),
                                               padding: EdgeInsets.all(5.0),
                                               decoration: BoxDecoration(
                                                   borderRadius:
                                                       BorderRadius.circular(10),
                                                   border: Border.all(
-                                                      color: Colors.white),
-                                                  color: ContainerColor),
+                                                      color: Colors.white)),
                                               child: Text(
-                                                ComparisonText,
+                                                postList.description.toString(),
                                                 style: TextStyle(
-                                                  color: Colors.white,
-                                                  //backgroundColor: Colors.red
-                                                ),
+                                                    color: Colors.white,
+                                                    fontStyle: FontStyle.italic,
+                                                    fontSize: 18),
                                               ),
                                             ),
                                             Text(
-                                              "Description:",
+                                              "Special Notes:",
                                               style: TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 20,
@@ -306,280 +366,280 @@ class _AdminPostState extends State<AdminPost> {
                                                   decoration:
                                                       TextDecoration.underline),
                                             ),
+                                            Container(
+                                              width: double.infinity,
+                                              margin: EdgeInsets.all(5.0),
+                                              padding: EdgeInsets.all(5.0),
+                                              decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                      color: Colors.white)),
+                                              child: Text(
+                                                postList.specialNotes.toString(),
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontStyle: FontStyle.italic,
+                                                    fontSize: 18),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(5.0),
+                                                  child: Text(
+                                                    postList.userName.toString(),
+                                                    style: TextStyle(
+                                                        color: Colors.white),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(5.0),
+                                                  child: Text(
+                                                      postList.postDateTime
+                                                          .toString(),
+                                                      style: TextStyle(
+                                                          color: Colors.white)),
+                                                ),
+                                                //for share post to other app
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(
+                                                      5.0),
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.share,color: Colors.white,),
+                                                    onPressed: () async{
+
+                                                      //for image
+                                                      final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
+                                                      final url = Uri.parse(urlImage);
+                                                      final response = await http.get(url);
+                                                      final bytes = response.bodyBytes;
+
+                                                      //for temporary store image in device
+                                                      final temp = await getTemporaryDirectory();
+                                                      final path = '${temp.path}/image.jpg';
+                                                      File(path).writeAsBytesSync(bytes);
+
+                                                      await Share.shareXFiles([XFile(path)],
+                                                          subject: "Azadari Schedule app",
+                                                          text:
+
+                                                          "⬛ Azadari Schedule App ⬛ \n"
+                                                              "🔊 ${postList.cityName} \n \n \n"
+                                                              "▪️Scholar:- ${postList.nameOfSchollar} \n"
+                                                              "▪️Program:- ${postList.programList} \n"
+                                                              "▪️Date:- ${postList.startDate} TO  ${postList.endDate} \n"
+                                                              "▪️Time:- ${postList.time}\n"
+                                                              "▪️City:- ${postList.cityName} \n"
+                                                              "▪️Description:- ${postList.description} \n"
+                                                              "▪️Special Notes:- ${postList.specialNotes} \n \n \n"
+                                                              "✅ For daily majlis update please download our app from play store"
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
-                                        iconColor: Colors.white,
-                                        children: [
-                                          Container(
-                                            width: double.infinity,
-                                            margin: EdgeInsets.all(5.0),
-                                            padding: EdgeInsets.all(5.0),
-                                            decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                border: Border.all(
-                                                    color: Colors.white)),
-                                            child: Text(
-                                              postList.description.toString(),
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontStyle: FontStyle.italic,
-                                                  fontSize: 18),
-                                            ),
-                                          ),
-                                          Text(
-                                            "Special Notes:",
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w700,
-                                                fontStyle: FontStyle.italic,
-                                                decoration:
-                                                    TextDecoration.underline),
-                                          ),
-                                          Container(
-                                            width: double.infinity,
-                                            margin: EdgeInsets.all(5.0),
-                                            padding: EdgeInsets.all(5.0),
-                                            decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                border: Border.all(
-                                                    color: Colors.white)),
-                                            child: Text(
-                                              postList.specialNotes.toString(),
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontStyle: FontStyle.italic,
-                                                  fontSize: 18),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 5,
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.all(5.0),
-                                                child: Text(
-                                                  postList.userName.toString(),
-                                                  style: TextStyle(
-                                                      color: Colors.white),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.all(5.0),
-                                                child: Text(
-                                                    postList.postDateTime
-                                                        .toString(),
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
-                                              ),
-                                              //for share post to other app
-                                              Padding(
-                                                padding:
-                                                const EdgeInsets.all(
-                                                    5.0),
-                                                child: IconButton(
-                                                  icon: Icon(Icons.share,color: Colors.white,),
-                                                  onPressed: () async{
-
-                                                    //for image
-                                                    final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
-                                                    final url = Uri.parse(urlImage);
-                                                    final response = await http.get(url);
-                                                    final bytes = response.bodyBytes;
-
-                                                    //for temporary store image in device
-                                                    final temp = await getTemporaryDirectory();
-                                                    final path = '${temp.path}/image.jpg';
-                                                    File(path).writeAsBytesSync(bytes);
-
-                                                    await Share.shareXFiles([XFile(path)],
-                                                        subject: "Azadari Schedule app",
-                                                        text:
-
-                                                        "⬛ Azadari Schedule App ⬛ \n"
-                                                            "🔊 ${postList.cityName} \n \n \n"
-                                                            "▪️Scholar:- ${postList.nameOfSchollar} \n"
-                                                            "▪️Program:- ${postList.programList} \n"
-                                                            "▪️Date:- ${postList.startDate} TO  ${postList.endDate} \n"
-                                                            "▪️Time:- ${postList.time}\n"
-                                                            "▪️City:- ${postList.cityName} \n"
-                                                            "▪️Description:- ${postList.description} \n"
-                                                            "▪️Special Notes:- ${postList.specialNotes} \n \n \n"
-                                                            "✅ For daily majlis update please download our app from play store"
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            } else if (tempSearch
-                                .toLowerCase()
-                                .contains(searchController.text.toString())) {
-                              return Padding(
-                                padding: EdgeInsets.only(left: 5, right: 5),
-                                child: Card(
-                                  color: Color(hexColors("00BCD4")),
-                                  elevation: 6,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                      BorderRadius.circular(10.0)),
-                                  child: Column(
-                                    children: [
-                                      ListTile(
-                                          leading: FullScreenWidget(
-                                              child: Container(
-                                                height: 50,
-                                                width: 50,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.rectangle,
-                                                  border: Border.all(color: Colors.black),
-                                                  color: Color(hexColors("84FFFF")),
+                                );
+                              } else if (tempSearch
+                                  .toLowerCase()
+                                  .contains(searchController.text.toString().trim())) {
+                                return Padding(
+                                  padding: EdgeInsets.only(left: 5, right: 5),
+                                  child: Card(
+                                    color: Color(hexColors("00BCD4")),
+                                    elevation: 6,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                        BorderRadius.circular(10.0)),
+                                    child: Column(
+                                      children: [
+                                        ListTile(
+                                            leading: FullScreenWidget(
+                                                child: Container(
+                                                  height: 50,
+                                                  width: 50,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.rectangle,
+                                                    border: Border.all(color: Colors.black),
+                                                    color: Color(hexColors("84FFFF")),
+                                                  ),
+                                                  child: Image.network("https://aeliya.000webhostapp.com/"+postList.imagePath.toString()),
+                                                )),
+                                            title: Column(
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Scholar: ",
+                                                      Hdetail: postList.nameOfSchollar.toString(),),
+                                                  ],
                                                 ),
-                                                child: Image.network("https://aeliya.000webhostapp.com/"+postList.imagePath.toString()),
-                                              )),
-                                          title: Column(
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Program: ",
+                                                      Hdetail: postList.programList.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Date: ",
+                                                        Hdetail: "${postList.startDate} TO  ${postList.endDate}"),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Time: ",
+                                                      Hdetail: postList.time.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "Azakhana: ",
+                                                      Hdetail: postList.azakhanaName.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                                  children: [
+                                                    titleStyle(Htitle: "City: ",
+                                                      Hdetail: postList.cityName.toString(),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                                  children: [
+                                                    Container(
+                                                      decoration: BoxDecoration(
+                                                          border: Border.all(
+                                                              color:
+                                                              Colors.white),
+                                                          shape: BoxShape.circle),
+                                                      child: IconButton(
+                                                          onPressed: () {
+                                                            print("edit tap");
+                                                            var img = "https://aeliya.000webhostapp.com/${postList.imagePath!}";
+                                                            var progList = postList.programList;
+                                                            var stDate = postList.startDate;
+                                                            var endDate = postList.endDate;
+                                                            var time = postList.time;
+                                                            var azakhana = postList.azakhanaName;
+                                                            var scholar = postList.nameOfSchollar;
+                                                            var city = postList.cityName;
+                                                            var des = postList.description;
+                                                            var notes = postList.specialNotes;
+                                                            var refid = postList.refId;
+                                                            Navigator.push(context, MaterialPageRoute(builder: (context)=> EditUserPost(
+                                                                img,progList!,stDate!,endDate!,time!,azakhana!,scholar!,city!,des!,notes!,refid!
+                                                            )));
+                                                          },
+                                                          icon: Icon(
+                                                            Icons.edit,
+                                                            color: Colors.yellow,
+                                                          )),
+                                                    ),
+                                                    SizedBox(
+                                                      width: 5,
+                                                    ),
+                                                    Container(
+                                                      decoration: BoxDecoration(
+                                                          border: Border.all(
+                                                              color:
+                                                              Colors.white),
+                                                          shape: BoxShape.circle),
+                                                      child: IconButton(
+                                                          onPressed: () {
+                                                            print("delete tap");
+                                                            _showDeleteDialog(postList.refId,postList.imagePath);//(context);
+                                                          },
+                                                          icon: Icon(
+                                                            Icons.delete_forever,
+                                                            color: Colors.red,
+                                                          )),
+                                                    ),
+                                                  ],
+                                                )
+                                              ],
+                                            )),
+                                        ExpansionTile(
+                                          title: Row(
+                                            mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Scholar: ",
-                                                    Hdetail: postList.nameOfSchollar.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Program: ",
-                                                    Hdetail: postList.programList.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Date: ",
-                                                      Hdetail: "${postList.startDate} TO  ${postList.endDate}"),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Time: ",
-                                                    Hdetail: postList.time.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "Azakhana: ",
-                                                    Hdetail: postList.azakhanaName.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                                children: [
-                                                  titleStyle(Htitle: "City: ",
-                                                    Hdetail: postList.cityName.toString(),),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                                children: [
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color:
-                                                            Colors.white),
-                                                        shape: BoxShape.circle),
-                                                    child: IconButton(
-                                                        onPressed: () {
-                                                          print("edit tap");
-                                                          var img = "https://aeliya.000webhostapp.com/${postList.imagePath!}";
-                                                          var progList = postList.programList;
-                                                          var stDate = postList.startDate;
-                                                          var endDate = postList.endDate;
-                                                          var time = postList.time;
-                                                          var azakhana = postList.azakhanaName;
-                                                          var scholar = postList.nameOfSchollar;
-                                                          var city = postList.cityName;
-                                                          var des = postList.description;
-                                                          var notes = postList.specialNotes;
-                                                          var refid = postList.refId;
-                                                          Navigator.push(context, MaterialPageRoute(builder: (context)=> EditUserPost(
-                                                              img,progList!,stDate!,endDate!,time!,azakhana!,scholar!,city!,des!,notes!,refid!
-                                                          )));
-                                                        },
-                                                        icon: Icon(
-                                                          Icons.edit,
-                                                          color: Colors.yellow,
-                                                        )),
+                                              Container(
+                                                margin: EdgeInsets.all(5.0),
+                                                padding: EdgeInsets.all(5.0),
+                                                decoration: BoxDecoration(
+                                                    borderRadius:
+                                                    BorderRadius.circular(10),
+                                                    border: Border.all(
+                                                        color: Colors.white),
+                                                    color: ContainerColor),
+                                                child: Text(
+                                                  ComparisonText,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    //backgroundColor: Colors.red
                                                   ),
-                                                  SizedBox(
-                                                    width: 5,
-                                                  ),
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color:
-                                                            Colors.white),
-                                                        shape: BoxShape.circle),
-                                                    child: IconButton(
-                                                        onPressed: () {
-                                                          print("delete tap");
-                                                          _showDeleteDialog(postList.refId);//(context);
-                                                        },
-                                                        icon: Icon(
-                                                          Icons.delete_forever,
-                                                          color: Colors.red,
-                                                        )),
-                                                  ),
-                                                ],
-                                              )
+                                                ),
+                                              ),
+                                              Text(
+                                                "Description:",
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontStyle: FontStyle.italic,
+                                                    decoration:
+                                                    TextDecoration.underline),
+                                              ),
                                             ],
-                                          )),
-                                      ExpansionTile(
-                                        title: Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                          ),
+                                          iconColor: Colors.white,
                                           children: [
                                             Container(
+                                              width: double.infinity,
                                               margin: EdgeInsets.all(5.0),
                                               padding: EdgeInsets.all(5.0),
                                               decoration: BoxDecoration(
                                                   borderRadius:
                                                   BorderRadius.circular(10),
                                                   border: Border.all(
-                                                      color: Colors.white),
-                                                  color: ContainerColor),
+                                                      color: Colors.white)),
                                               child: Text(
-                                                ComparisonText,
+                                                postList.description.toString(),
                                                 style: TextStyle(
-                                                  color: Colors.white,
-                                                  //backgroundColor: Colors.red
-                                                ),
+                                                    color: Colors.white,
+                                                    fontStyle: FontStyle.italic,
+                                                    fontSize: 18),
                                               ),
                                             ),
                                             Text(
-                                              "Description:",
+                                              "Special Notes:",
                                               style: TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 20,
@@ -588,129 +648,121 @@ class _AdminPostState extends State<AdminPost> {
                                                   decoration:
                                                   TextDecoration.underline),
                                             ),
+                                            Container(
+                                              width: double.infinity,
+                                              margin: EdgeInsets.all(5.0),
+                                              padding: EdgeInsets.all(5.0),
+                                              decoration: BoxDecoration(
+                                                  borderRadius:
+                                                  BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                      color: Colors.white)),
+                                              child: Text(
+                                                postList.specialNotes.toString(),
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontStyle: FontStyle.italic,
+                                                    fontSize: 18),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(5.0),
+                                                  child: Text(
+                                                    postList.userName.toString(),
+                                                    style: TextStyle(
+                                                        color: Colors.white),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(5.0),
+                                                  child: Text(
+                                                      postList.postDateTime
+                                                          .toString(),
+                                                      style: TextStyle(
+                                                          color: Colors.white)),
+                                                ),
+                                                //for share post to other app
+                                                Padding(
+                                                  padding:
+                                                  const EdgeInsets.all(
+                                                      5.0),
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.share,color: Colors.white,),
+                                                    onPressed: () async{
+
+                                                      //for image
+                                                      final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
+                                                      final url = Uri.parse(urlImage);
+                                                      final response = await http.get(url);
+                                                      final bytes = response.bodyBytes;
+
+                                                      //for temporary store image in device
+                                                      final temp = await getTemporaryDirectory();
+                                                      final path = '${temp.path}/image.jpg';
+                                                      File(path).writeAsBytesSync(bytes);
+
+                                                      await Share.shareXFiles([XFile(path)],
+                                                          subject: "Azadari Schedule app",
+                                                          text:
+
+                                                          "⬛ Azadari Schedule App ⬛ \n"
+                                                              "🔊 ${postList.cityName} \n \n \n"
+                                                              "▪️Scholar:- ${postList.nameOfSchollar} \n"
+                                                              "▪️Program:- ${postList.programList} \n"
+                                                              "▪️Date:- ${postList.startDate} TO  ${postList.endDate} \n"
+                                                              "▪️Time:- ${postList.time}\n"
+                                                              "▪️City:- ${postList.cityName} \n"
+                                                              "▪️Description:- ${postList.description} \n"
+                                                              "▪️Special Notes:- ${postList.specialNotes} \n \n \n"
+                                                              "✅ For daily majlis update please download our app from play store"
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
-                                        iconColor: Colors.white,
-                                        children: [
-                                          Container(
-                                            width: double.infinity,
-                                            margin: EdgeInsets.all(5.0),
-                                            padding: EdgeInsets.all(5.0),
-                                            decoration: BoxDecoration(
-                                                borderRadius:
-                                                BorderRadius.circular(10),
-                                                border: Border.all(
-                                                    color: Colors.white)),
-                                            child: Text(
-                                              postList.description.toString(),
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontStyle: FontStyle.italic,
-                                                  fontSize: 18),
-                                            ),
-                                          ),
-                                          Text(
-                                            "Special Notes:",
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w700,
-                                                fontStyle: FontStyle.italic,
-                                                decoration:
-                                                TextDecoration.underline),
-                                          ),
-                                          Container(
-                                            width: double.infinity,
-                                            margin: EdgeInsets.all(5.0),
-                                            padding: EdgeInsets.all(5.0),
-                                            decoration: BoxDecoration(
-                                                borderRadius:
-                                                BorderRadius.circular(10),
-                                                border: Border.all(
-                                                    color: Colors.white)),
-                                            child: Text(
-                                              postList.specialNotes.toString(),
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontStyle: FontStyle.italic,
-                                                  fontSize: 18),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 5,
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Padding(
-                                                padding:
-                                                const EdgeInsets.all(5.0),
-                                                child: Text(
-                                                  postList.userName.toString(),
-                                                  style: TextStyle(
-                                                      color: Colors.white),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding:
-                                                const EdgeInsets.all(5.0),
-                                                child: Text(
-                                                    postList.postDateTime
-                                                        .toString(),
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
-                                              ),
-                                              //for share post to other app
-                                              Padding(
-                                                padding:
-                                                const EdgeInsets.all(
-                                                    5.0),
-                                                child: IconButton(
-                                                  icon: Icon(Icons.share,color: Colors.white,),
-                                                  onPressed: () async{
-
-                                                    //for image
-                                                    final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
-                                                    final url = Uri.parse(urlImage);
-                                                    final response = await http.get(url);
-                                                    final bytes = response.bodyBytes;
-
-                                                    //for temporary store image in device
-                                                    final temp = await getTemporaryDirectory();
-                                                    final path = '${temp.path}/image.jpg';
-                                                    File(path).writeAsBytesSync(bytes);
-
-                                                    await Share.shareXFiles([XFile(path)],
-                                                        subject: "Azadari Schedule app",
-                                                        text:
-
-                                                        "⬛ Azadari Schedule App ⬛ \n"
-                                                            "🔊 ${postList.cityName} \n \n \n"
-                                                            "▪️Scholar:- ${postList.nameOfSchollar} \n"
-                                                            "▪️Program:- ${postList.programList} \n"
-                                                            "▪️Date:- ${postList.startDate} TO  ${postList.endDate} \n"
-                                                            "▪️Time:- ${postList.time}\n"
-                                                            "▪️City:- ${postList.cityName} \n"
-                                                            "▪️Description:- ${postList.description} \n"
-                                                            "▪️Special Notes:- ${postList.specialNotes} \n \n \n"
-                                                            "✅ For daily majlis update please download our app from play store"
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            } else {
-                              return Container();
-                            }
+                                );
+                              } else {
+                                return Container();
+                              }
+                            }),
+
+                        onRefresh: () async{
+                          await Future.delayed(Duration(milliseconds: 1000));
+                          setState(() {
+                            isRefersh = true;
+                            currentPage = 1;
                           });
+                        },
+
+                        onLoading: () async {
+                          if(currentPage == snapshot.data!.pages){
+                            refreshController.loadNoData();
+                          }else{
+                            setState(() {
+                              currentPage++;
+                            });
+                            // await Future.delayed(Duration(milliseconds: 1000));
+                            // refreshController.loadComplete();
+                          }
+
+                        },
+
+                      );
                     } else if(snapshot.connectionState == ConnectionState.waiting){
                       return Center(
                         child: CircularProgressIndicator(),
@@ -790,7 +842,7 @@ class _AdminPostState extends State<AdminPost> {
   //   });
   // }
 
-  Future<void> _showDeleteDialog(String? refId) async {
+  Future<void> _showDeleteDialog(String? refId, String? imagePath) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
@@ -804,7 +856,6 @@ class _AdminPostState extends State<AdminPost> {
               fontSize: 15),),
               onPressed: () {
                 Navigator.of(context).pop();
-                print('Confirmed');
                 showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -815,7 +866,7 @@ class _AdminPostState extends State<AdminPost> {
                         ),
                       );
                     });
-                deletePost(refId);
+                deletePost(refId,imagePath);
               },
             ),
             TextButton(
@@ -834,19 +885,45 @@ class _AdminPostState extends State<AdminPost> {
   }
 
 
-  Future<void> deletePost(String? refId) async {
+  Future<void> deletePost(String? refId, String? imagePath) async {
     var url = "https://aeliya.000webhostapp.com/deletePost.php?refId=$refId";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
 
     if (response.statusCode == 200) {
-      print("deleted");
-      Navigator.of(context).pop();
-      Fluttertoast.showToast(msg: "Deleted successfully",
-          backgroundColor: Color(hexColors("006064")));
+        DeleteImage(refId, imagePath);
+      // Fluttertoast.showToast(msg: "Deleted successfully",
+      //     backgroundColor: Color(hexColors("006064")));
     } else {
       Fluttertoast.showToast(msg: "something went wrong",
           backgroundColor: Color(hexColors("006064")));
+    }
+  }
+
+  Future DeleteImage(String? refId, String? imagePath) async {
+
+    var url = Uri.parse("https://aeliya.000webhostapp.com/deletePost.php?refId=$refId");
+
+
+    Map mapeddate = {
+      'imgPath': imagePath
+    };
+    print("JSON DATA : ${mapeddate}");
+    http.Response response = await http.post(url, body: mapeddate);
+
+    if (response.statusCode == 200) {
+        dummyData.data!.clear();
+      var data = jsonDecode(response.body);
+      print("Data:- $data");
+      Navigator.pop(context);
+      Fluttertoast.showToast(msg: "Deleted successfully",
+          backgroundColor: Color(hexColors("006064")));
+    } else {
+      print("failed");
+      Fluttertoast.showToast(msg: "Some thing went wrong",
+          backgroundColor: Color(hexColors("006064")));
+      // ignore: use_build_context_synchronously
+      Navigator.of(context).pop();
     }
   }
 

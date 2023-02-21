@@ -9,6 +9,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
+import '../Admin Data/AdminPannel.dart';
+
 class EditUserPost extends StatefulWidget {
   String e_img;
   String e_progList ;
@@ -303,6 +305,7 @@ class _EditUserPostState extends State<EditUserPost> {
                             )),
                       ),
                       TextFormField(
+                        maxLength: 15,
                         controller: CityNameController,
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
@@ -327,6 +330,7 @@ class _EditUserPostState extends State<EditUserPost> {
                         height: 10,
                       ),
                       TextFormField(
+                        maxLength: 40,
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 18),
@@ -354,6 +358,7 @@ class _EditUserPostState extends State<EditUserPost> {
                         height: 10,
                       ),
                       TextFormField(
+                        maxLength: 40,
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 18),
@@ -630,16 +635,13 @@ class _EditUserPostState extends State<EditUserPost> {
       if (response.statusCode == 200) {
         print("Success");
 
-        Fluttertoast.showToast(msg: "Your post is published",
-            backgroundColor: Color(
-                hexColors("006064")));
         Navigator.pop(context);
         var data = jsonDecode(response.body);
         print("Data:- $data");
-        Fluttertoast.showToast(msg: "Your post is published",
+        Fluttertoast.showToast(msg: "Your post is Updated",
             backgroundColor: Color(
                 hexColors("006064")));
-        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminPannel()));
       } else {
         print("failed");
         Fluttertoast.showToast(msg: "Some thing went wrong",
@@ -685,8 +687,8 @@ class _EditUserPostState extends State<EditUserPost> {
         print(response.stream.transform(utf8.decoder).listen((event) {
           print(event);
         }));
-        // sendNotification("${_MajlisMehfil}: ${ScholarName}",
-        //     "${AzakhanaName} ${StartDate} to ${EndDate} ${MajlisTime}");
+        sendNotification("(Update Schedule) ${_MajlisMehfil}: ${ScholarName}",
+            "${AzakhanaName} ${StartDate} to ${EndDate} ${MajlisTime}");
         Fluttertoast.showToast(msg: "Your post is published",
             backgroundColor: Color(
                 hexColors("006064")));
@@ -698,6 +700,42 @@ class _EditUserPostState extends State<EditUserPost> {
     }
 
   }
+
+  //send message to all user
+  void sendNotification(String title, String body) async{
+    try{
+      await http.post(
+        Uri.parse("https://fcm.googleapis.com/fcm/send"),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+        },
+        body: jsonEncode(
+          <String, dynamic>{
+            'priority': 'high',
+            'data': <String, dynamic>{
+              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+              'status': 'done',
+              'body': body,
+              'title': title,
+            },
+            "notification":<String,dynamic>{
+              "title":title,
+              "body": body,
+              "android_channel_id":"taki"
+            },
+            //"to":token1,
+            "to":"/topics/allNotification",
+          },
+        ),
+      );
+    }catch(error){
+      print(error);
+    }
+
+  }
+
+
 }
 
 

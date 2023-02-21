@@ -144,6 +144,7 @@ class _AddPostState extends State<AddPost> {
                           ),
                           dropdownColor: Color(hexColors('00BCD4')),
                           value: _MajlisMehfil,
+                          isExpanded: true,
                           //alignment: Alignment.center,
                           items: programList
                               .map((item) =>
@@ -184,21 +185,23 @@ class _AddPostState extends State<AddPost> {
                                 ),
                                 height: 50,
                                 width: 120,
-                                child: InkWell(
-                                    onTap: () {
-                                      FocusManager.instance.primaryFocus?.unfocus();
-                                      pickDate(context);
-                                    },
-                                    child: Text(
-                                      StartDate,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          //fontFamily: 'Amiri',
-                                          fontWeight: FontWeight.w700,
-                                          //fontStyle: FontStyle.italic,
-                                          fontSize: 18),
-                                    )),
+                                child: Center(
+                                  child: InkWell(
+                                      onTap: () {
+                                        FocusManager.instance.primaryFocus?.unfocus();
+                                        pickDate(context);
+                                      },
+                                      child: Text(
+                                        StartDate,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            //fontFamily: 'Amiri',
+                                            fontWeight: FontWeight.w700,
+                                            //fontStyle: FontStyle.italic,
+                                            fontSize: 18),
+                                      )),
+                                ),
                               ),
                             ),
                             Text("TO",
@@ -217,23 +220,25 @@ class _AddPostState extends State<AddPost> {
                                 ),
                                 height: 50,
                                 width: 120,
-                                child: InkWell(
-                                    onTap: () {
-                                      FocusManager.instance.primaryFocus?.unfocus();
-                                      Fluttertoast.showToast(msg:
-                                      "Please select date range from start date",
-                                          backgroundColor: Color(
-                                              hexColors("006064")));
-                                    },
-                                    child: Text(
-                                      EndDate,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          //fontStyle: FontStyle.italic,
-                                          fontSize: 18),
-                                    )),
+                                child: Center(
+                                  child: InkWell(
+                                      onTap: () {
+                                        FocusManager.instance.primaryFocus?.unfocus();
+                                        Fluttertoast.showToast(msg:
+                                        "Please select date range from start date",
+                                            backgroundColor: Color(
+                                                hexColors("006064")));
+                                      },
+                                      child: Text(
+                                        EndDate,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            //fontStyle: FontStyle.italic,
+                                            fontSize: 18),
+                                      )),
+                                ),
                               ),
                             ),
                           ],
@@ -250,23 +255,26 @@ class _AddPostState extends State<AddPost> {
                           ),
                           height: 50,
                           width: 120,
-                          child: InkWell(
-                              onTap: () {
-                                FocusManager.instance.primaryFocus?.unfocus();
-                                pickTime(context);
-                              },
-                              child: Text(
-                                MajlisTime,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 18,
-                                ),
-                              )),
+                          child: Center(
+                            child: InkWell(
+                                onTap: () {
+                                  FocusManager.instance.primaryFocus?.unfocus();
+                                  pickTime(context);
+                                },
+                                child: Text(
+                                  MajlisTime,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: 18,
+                                  ),
+                                )),
+                          ),
                         ),
                         TextFormField(
+                          maxLength: 15,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               //fontStyle: FontStyle.italic,
@@ -287,13 +295,14 @@ class _AddPostState extends State<AddPost> {
                             CityName = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty ? 'Enter City' : null;
+                            return value!.trim().isEmpty ? 'Enter City' : null;
                           },
                         ),
                         SizedBox(
                           height: 10,
                         ),
                         TextFormField(
+                          maxLength: 40,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -310,7 +319,7 @@ class _AddPostState extends State<AddPost> {
                             AzakhanaName = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty
+                            return value!.trim().isEmpty
                                 ? 'Enter Azakhana Name'
                                 : null;
                           },
@@ -319,6 +328,7 @@ class _AddPostState extends State<AddPost> {
                           height: 10,
                         ),
                         TextFormField(
+                          maxLength: 40,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -335,7 +345,7 @@ class _AddPostState extends State<AddPost> {
                             ScholarName = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty ? 'Enter Title' : null;
+                            return value!.trim().isEmpty ? 'Enter Title' : null;
                           },
                         ),
                         SizedBox(
@@ -360,7 +370,7 @@ class _AddPostState extends State<AddPost> {
                             FullDescription = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty ? 'Enter Description' : null;
+                            return value!.trim().isEmpty ? 'Enter Description' : null;
                           },
                         ),
                         SizedBox(
@@ -383,7 +393,7 @@ class _AddPostState extends State<AddPost> {
                             SpecialNotes = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty ? 'Enter Special Notes' : null;
+                            return value!.trim().isEmpty ? 'Enter Special Notes' : null;
                           },
                         ),
                         SizedBox(

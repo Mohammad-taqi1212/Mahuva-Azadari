@@ -1,12 +1,17 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:mahuva_azadari/Models/AdminLinksModel.dart';
 import 'package:mahuva_azadari/Screens/Post%20Edit/Edit%20Links.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:http/http.dart' as http;
 import '../../Models/Hexa color.dart';
-import '../../Models/getAdminLInks.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+
+
 
 class AdminLinks extends StatefulWidget {
   const AdminLinks({Key? key}) : super(key: key);
@@ -17,72 +22,111 @@ class AdminLinks extends StatefulWidget {
 
 class _AdminLinksState extends State<AdminLinks> {
 
-  late Stream<GetAdminLInks> stream = Stream.periodic(Duration(seconds: 5))
+  late Stream<AdminLinksModel> stream = Stream.periodic(Duration(seconds: 5))
       .asyncMap((event) async => await getAdminLinks());
+
+  late YoutubePlayerController _controller;
 
   String? title;
 
   late YoutubePlayerController _youtubePlayerController;
   void initState(){
     super.initState();
-    _youtubePlayerController = YoutubePlayerController(initialVideoId: '');
+
+    _controller = YoutubePlayerController(
+        params: YoutubePlayerParams(
+          showControls: true,
+          mute: false,
+          showFullscreenButton: true,
+          loop: false,
+        )
+    );
+
+    _controller.setFullScreenListener(
+          (isFullScreen) {
+        log('${isFullScreen ? 'Entered' : 'Exited'} Fullscreen.');
+      },
+    );
+
+  }
+
+  @override
+  void dispose() {
+    _controller.close();
+    super.dispose();
   }
 
 
+  int currentPage = 1;
+  AdminLinksModel dummyData = AdminLinksModel();
+  bool isRefersh = false;
+  final RefreshController refreshController = RefreshController();
 
-  Future<GetAdminLInks> getAdminLinks() async {
+
+  Future<AdminLinksModel> getAdminLinks() async {
     final SharedPreferences sharedPreferences =
     await SharedPreferences.getInstance();
     var getUserId = sharedPreferences.getString('currentUserid');
 
-    var url = "https://aeliya.000webhostapp.com/adminLinks.php?id=$getUserId";
+    var url = "https://aeliya.000webhostapp.com/adminLinks.php?id=$getUserId&pageNo=$currentPage";
     print(url);
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
-    print(jsondata);
+    var _apiData = AdminLinksModel.fromJson(jsondata);
+
+    var newData = [...?dummyData.data, ...?_apiData.data];
+
 
     if (response.statusCode == 200) {
-      print("****" + jsondata.toString());
-      return GetAdminLInks.fromJson(jsondata);
+
+      if(isRefersh == true){
+        setState((){
+          isRefersh = false;
+        });
+        refreshController.refreshCompleted();
+      }
+      else{
+        if(currentPage == _apiData.pages){
+          refreshController.loadNoData();
+        }else{
+          refreshController.loadComplete();
+        }
+      }
+
+      final refids = newData.map((e) => e.refId).toSet();
+      newData.retainWhere((ids) => refids.remove(ids.refId));
+      //dummyData.data = newData.toSet().toList();
+      dummyData.data = newData;
+
+      return dummyData;
+
     } else {
-      return GetAdminLInks.fromJson(jsondata);
+      return dummyData;
     }
   }
 
-  @override
-  void deactive() {
-    _youtubePlayerController.pause();
-    super.deactivate();
-    print("deactivate");
-  }
-
-  @override
-  void dipose() {
-    _youtubePlayerController.dispose();
-    print("dispose");
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return YoutubePlayerBuilder(
-      player: YoutubePlayer(
-        controller: _youtubePlayerController,
-      ),
+    return YoutubePlayerScaffold(
+      controller: _controller,
+      aspectRatio: 16 / 9,
       builder: (context,player){
         return SafeArea(
           child: Scaffold(
-            body: StreamBuilder<GetAdminLInks>(
+            body: StreamBuilder<AdminLinksModel>(
               stream: stream,
               builder: (context, snapshot){
                 if(snapshot.hasData){
-                  return ListView.builder(
-                      itemCount: snapshot.data!.data!.length,
-                      itemBuilder: (context, index){
-                        var allItem = snapshot.data!.data![index];
-                        return Container(
-                          margin: EdgeInsets.all(8),
-                          child: Card(
+                  return SmartRefresher(
+                    controller: refreshController,
+                    enablePullUp: true,
+                    child: ListView.builder(
+                        itemCount: snapshot.data!.data!.length,
+                        itemBuilder: (context, index){
+                          var allItem = snapshot.data!.data![index];
+                          var videoId = allItem.link!.substring(17);
+                          return Card(
                             color: Color(hexColors("03A9F4")),
                             elevation: 6,
                             shape: RoundedRectangleBorder(
@@ -91,107 +135,169 @@ class _AdminLinksState extends State<AdminLinks> {
                             child: Column(
                               children: [
                                 YoutubePlayer(
-                                  controller: _youtubePlayerController = YoutubePlayerController(
-                                    initialVideoId: YoutubePlayer.convertUrlToId(allItem.link!).toString(),
-                                    flags: YoutubePlayerFlags(
-                                      autoPlay: false,
-                                    ),
-                                  ),
-                                  //   ..addListener(() {
-                                  //   if(mounted){
-                                  //     setState(() {});
-                                  //   }
-                                  // }),
-                                  showVideoProgressIndicator: true,
+                                    controller: _controller = YoutubePlayerController.fromVideoId(videoId: videoId,
+                                        autoPlay: false,
+                                        params: YoutubePlayerParams(showFullscreenButton: true ))
                                 ),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(left: 5.0),
-                                        child: Text("Channel Name:-  ${allItem.channelName!}",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(left: 5),
-                                        child: Text("City : ${allItem.city!}",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white
-                                          ),),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                SizedBox(height: 5,),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.end,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Container(
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                color:
-                                                Colors.white),
-                                            shape: BoxShape.circle),
-                                        child: IconButton(
-                                            onPressed: () {
-                                              print("edit tap");
-                                              var elink = allItem.link;
-                                              var ecity = allItem.city;
-                                              var echannel = allItem.channelName;
-                                              var refid = allItem.refId;
+                                      Text("City :- ${allItem.city}",
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15
+                                        ),),
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.end,
+                                        children: [
+                                          Container(
+                                            decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color:
+                                                    Colors.white),
+                                                shape: BoxShape.circle),
+                                            child: IconButton(
+                                                onPressed: () {
+                                                  print("edit tap");
+                                                  var elink = allItem.link;
+                                                  var ecity = allItem.city;
+                                                  var refid = allItem.refId;
 
-                                              Navigator.push(context,
-                                                  MaterialPageRoute(builder: (context)=> EditLinks(
-                                                    elink!,ecity!,echannel!,refid!
-                                                  )));
-                                            },
-                                            icon: Icon(
-                                              Icons.edit,
-                                              color: Colors.yellow,
-                                            )),
+                                                  Navigator.push(context,
+                                                      MaterialPageRoute(builder: (context)=> EditLinks(
+                                                          elink!,ecity!,refid!
+                                                      )));
+                                                },
+                                                icon: Icon(
+                                                  Icons.edit,
+                                                  color: Colors.yellow,
+                                                )),
+                                          ),
+                                          SizedBox(
+                                            width: 5,
+                                          ),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color:
+                                                    Colors.white),
+                                                shape: BoxShape.circle),
+                                            child: IconButton(
+                                                onPressed: () {
+                                                  print("delete tap");
+                                                  _showDeleteDialog(allItem.refId);
+                                                },
+                                                icon: Icon(
+                                                  Icons.delete_forever,
+                                                  color: Colors.red,
+                                                )),
+                                          ),
+                                        ],
                                       ),
-                                      SizedBox(
-                                        width: 5,
-                                      ),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                color:
-                                                Colors.white),
-                                            shape: BoxShape.circle),
-                                        child: IconButton(
-                                            onPressed: () {
-                                              print("delete tap");
-                                              _showDeleteDialog(allItem.refId);
-                                            },
-                                            icon: Icon(
-                                              Icons.delete_forever,
-                                              color: Colors.red,
-                                            )),
-                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Padding(
+                                //   padding: const EdgeInsets.all(8.0),
+                                //   child: Row(
+                                //     mainAxisAlignment:
+                                //     MainAxisAlignment.end,
+                                //     children: [
+                                //       Container(
+                                //         decoration: BoxDecoration(
+                                //             border: Border.all(
+                                //                 color:
+                                //                 Colors.white),
+                                //             shape: BoxShape.circle),
+                                //         child: IconButton(
+                                //             onPressed: () {
+                                //               print("edit tap");
+                                //               var elink = allItem.link;
+                                //               var ecity = allItem.city;
+                                //               var refid = allItem.refId;
+                                //
+                                //               Navigator.push(context,
+                                //                   MaterialPageRoute(builder: (context)=> EditLinks(
+                                //                       elink!,ecity!,refid!
+                                //                   )));
+                                //             },
+                                //             icon: Icon(
+                                //               Icons.edit,
+                                //               color: Colors.yellow,
+                                //             )),
+                                //       ),
+                                //       SizedBox(
+                                //         width: 5,
+                                //       ),
+                                //       Container(
+                                //         decoration: BoxDecoration(
+                                //             border: Border.all(
+                                //                 color:
+                                //                 Colors.white),
+                                //             shape: BoxShape.circle),
+                                //         child: IconButton(
+                                //             onPressed: () {
+                                //               print("delete tap");
+                                //               _showDeleteDialog(allItem.refId);
+                                //             },
+                                //             icon: Icon(
+                                //               Icons.delete_forever,
+                                //               color: Colors.red,
+                                //             )),
+                                //       ),
+                                //     ],
+                                //   ),
+                                // ),
+                                Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(allItem.username.toString()),
+                                      Text(allItem.postDateTime.toString()),
+                                      IconButton(onPressed: () async{
+                                        await Share.share(allItem.link.toString());
+                                      },
+                                          icon: Icon(Icons.share,color: Colors.white))
                                     ],
                                   ),
                                 )
                               ],
                             ),
 
-                          ),
-                        );
+                          );
+                        }
+                    ),
+
+                    onRefresh: () async{
+                      await Future.delayed(Duration(milliseconds: 1000));
+                      setState(() {
+                        isRefersh = true;
+                        currentPage = 1;
                       });
-                }else if(snapshot.connectionState == ConnectionState.waiting){
+                    },
+
+                    onLoading: () async {
+                      if(currentPage == snapshot.data!.pages){
+                        refreshController.loadNoData();
+                      }else{
+                        setState(() {
+                          currentPage++;
+                        });
+                        // await Future.delayed(Duration(milliseconds: 1000));
+                        // refreshController.loadComplete();
+                      }
+
+                    },
+
+                  );
+                }
+                else if(snapshot.connectionState == ConnectionState.waiting){
                   return Center(
                     child: CircularProgressIndicator(),
                   );
@@ -263,7 +369,7 @@ class _AdminLinksState extends State<AdminLinks> {
     var jsondata = jsonDecode(response.body.toString());
 
     if (response.statusCode == 200) {
-      print("deleted");
+      dummyData.data!.clear();
       Navigator.of(context).pop();
       Fluttertoast.showToast(msg: "Deleted successfully",
           backgroundColor: Color(hexColors("006064")));

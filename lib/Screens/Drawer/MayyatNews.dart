@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mahuva_azadari/Models/AllMayyatNewsModel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../../Models/Hexa color.dart';
 import 'package:http/http.dart' as http;
 import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:full_screen_image_null_safe/full_screen_image_null_safe.dart';
-import '../../Models/MayyatNewsModel.dart';
 import 'Home.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -21,7 +21,7 @@ class MayyatNews extends StatefulWidget {
 
 class _MayyatNewsState extends State<MayyatNews> {
 
-  late Stream<AdminMnewsModel> stream = Stream.periodic(Duration(seconds: 5))
+  late Stream<AllMayyatNewsModel> stream = Stream.periodic(Duration(seconds: 5))
       .asyncMap((event) async => await getMayyatNews());
 
 
@@ -34,12 +34,16 @@ class _MayyatNewsState extends State<MayyatNews> {
   TextEditingController searchController = TextEditingController();
   bool showFlaotingButton = true;
 
-  Future<AdminMnewsModel> getMayyatNews() async {
+  AllMayyatNewsModel dummyData = AllMayyatNewsModel();
+
+  Future<AllMayyatNewsModel> getMayyatNews() async {
     var url =
         "https://aeliya.000webhostapp.com/getMayyatNews.php?page=$currentPage";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
-    var _apiData = AdminMnewsModel.fromJson(jsondata);
+    var _apiData = AllMayyatNewsModel.fromJson(jsondata);
+
+    var newData = [...?dummyData.data, ...?_apiData.data];
 
     if (response.statusCode == 200) {
 
@@ -48,19 +52,21 @@ class _MayyatNewsState extends State<MayyatNews> {
           isRefersh = false;
         });
         refreshController.refreshCompleted();
-        return AdminMnewsModel.fromJson(jsondata);
       }
       else{
-        print(_apiData.hasNextPage.toString());
         if(_apiData.hasNextPage == 0){
           refreshController.loadNoData();
         }else{
           refreshController.loadComplete();
         }
-        return AdminMnewsModel.fromJson(jsondata);
+        final refids = newData.map((e) => e.refId).toSet();
+        newData.retainWhere((ids) => refids.remove(ids.refId));
+        //dummyData.data = newData.toSet().toList();
+        dummyData.data = newData;
       }
+      return dummyData;
     } else {
-      return AdminMnewsModel.fromJson(jsondata);
+      return dummyData;;
     }
   }
 
@@ -115,9 +121,9 @@ class _MayyatNewsState extends State<MayyatNews> {
                   //child: Container()
                 ),
                 Expanded(
-                    child: StreamBuilder<AdminMnewsModel>(
+                    child: StreamBuilder<AllMayyatNewsModel>(
                       stream: stream,
-                      builder: (context,AsyncSnapshot<AdminMnewsModel> snapshot) {
+                      builder: (context,AsyncSnapshot<AllMayyatNewsModel> snapshot) {
                         if (snapshot.hasData) {
                           return SmartRefresher(
                             controller: refreshController,
@@ -609,10 +615,9 @@ class _MayyatNewsState extends State<MayyatNews> {
                               }else{
                                 setState(() {
                                   currentPage++;
-                                  //snapshot.data!.data!.addAll(snapshot.data!.data!.toList());
                                 });
-                                await Future.delayed(Duration(milliseconds: 1000));
-                                refreshController.loadComplete();
+                                // await Future.delayed(Duration(milliseconds: 1000));
+                                // refreshController.loadComplete();
                               }
 
                             },
@@ -624,12 +629,12 @@ class _MayyatNewsState extends State<MayyatNews> {
                           );
                         }else if (snapshot.hasError) {
                           return Center(
-                            child: Text("No Data !"),
+                            child: Text("Some thing went wrong !"),
                           );
                         }
                         else {
                           return Center(
-                            child: Text("No Data"),
+                            child: Text("Some thing went wrong !"),
                           );
                         }
                       },

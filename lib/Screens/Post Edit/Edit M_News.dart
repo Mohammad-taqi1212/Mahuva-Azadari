@@ -12,6 +12,7 @@ import '../../Models/Round Button.dart';
 import 'package:http/http.dart' as http;
 
 import '../Admin Data/Admin M_News.dart';
+import '../Admin Data/AdminPannel.dart';
 
 class EditMnews extends StatefulWidget {
 
@@ -105,23 +106,7 @@ class _EditMnewsState extends State<EditMnews> {
                   },
                   child: Center(
                     child: Container(
-                      child: _image != null
-                          ? ClipRRect(
-                        child: Image.file(
-                          _image!.absolute,
-                          width: double.infinity,
-                          height: 250,
-                          //fit: BoxFit.fitHeight,
-                        ),
-                      )
-                          : Container(
-                        decoration: BoxDecoration(
-                            color: Color(hexColors("80DEEA")),
-                            borderRadius: BorderRadius.circular(10)),
-                        width: double.infinity,
-                        height: 150,
-                        child: Image.network("https://aeliya.000webhostapp.com/${widget.e_img}")
-                      ),
+                      child: chekImage(widget.e_img),
                     ),
                   ),
                 ),
@@ -156,6 +141,7 @@ class _EditMnewsState extends State<EditMnews> {
                           height: 10,
                         ),
                         TextFormField(
+                          maxLength: 15,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -454,8 +440,6 @@ class _EditMnewsState extends State<EditMnews> {
     var getUserId = sharedPreferences.getString('currentUserid');
     var getUserName = sharedPreferences.get('getUserName');
     String _DateTimeNow = DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now());
-    print(getUserId);
-    print(getUserName);
 
     if(_Mtime == "Mayyat Time"){
       _Mtime = "Will update";
@@ -484,17 +468,18 @@ class _EditMnewsState extends State<EditMnews> {
       print("JSON DATA : ${mapeddate}");
       http.Response response = await http.post(url, body: mapeddate);
 
+
       if (response.statusCode == 200) {
         print("Success");
-        sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
-            "City : ${city}, Mayyat Time : ${_Mtime}");
-        Fluttertoast.showToast(msg: "Your post is published",
+        Navigator.pop(context);
+        Fluttertoast.showToast(msg: "Your post is Updated",
             backgroundColor: Color(
                 hexColors("006064")));
-        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminMnews()));
+        sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ (Update Mayyat News)${Mname}",
+            "City : ${city}, Mayyat Time : ${_Mtime}");
+        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPannel()));
         var data = jsonDecode(response.body);
         print("Data:- $data");
-        Navigator.pop(context);
       } else {
         print("failed");
         Fluttertoast.showToast(msg: "Some thing went wrong",
@@ -509,7 +494,7 @@ class _EditMnewsState extends State<EditMnews> {
       var stream = http.ByteStream(_image!.openRead());
       stream.cast();
       var length = await _image!.length();
-      var url = Uri.parse("http://aeliya.000webhostapp.com/addMayyatNews.php");
+      var url = Uri.parse("http://aeliya.000webhostapp.com/updateMayyatNews.php");
       var request = http.MultipartRequest('POST', url);
 
 
@@ -542,10 +527,10 @@ class _EditMnewsState extends State<EditMnews> {
         }));
         sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
             "City : ${city}, Mayyat Time : ${_Mtime}");
-        Fluttertoast.showToast(msg: "Your post is published",
+        Fluttertoast.showToast(msg: "Your post is Update",
             backgroundColor: Color(
                 hexColors("006064")));
-        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminPannel()));
       }else{
         Navigator.pop(context);
         print("NOT suuccess");
@@ -585,6 +570,29 @@ class _EditMnewsState extends State<EditMnews> {
       );
     }catch(error){
       print(error);
+    }
+
+  }
+
+  chekImage(String imagepath) {
+    if(imagepath.isEmpty){
+      print("null");
+      return
+        Container(
+          decoration: BoxDecoration(
+              color: Color(hexColors("80DEEA")),
+              borderRadius: BorderRadius.circular(10)),
+          width: double.infinity,
+          height: 150,
+          child: Icon(
+            Icons.camera_alt,
+            color: Colors.white,
+          ),
+        );
+    }else{
+      print("not null");
+      return
+        Image.network("https://aeliya.000webhostapp.com/"+imagepath);
     }
 
   }

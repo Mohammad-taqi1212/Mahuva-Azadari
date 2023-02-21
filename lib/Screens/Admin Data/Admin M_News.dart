@@ -7,14 +7,15 @@ import 'package:mahuva_azadari/Screens/Post%20Edit/Edit%20M_News.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../Models/AdminMayyatModel.dart';
 import '../../Models/Hexa color.dart';
 import 'package:http/http.dart' as http;
 import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:full_screen_image_null_safe/full_screen_image_null_safe.dart';
-import '../../Models/MayyatNewsModel.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../Drawer/Home.dart';
+
 
 class AdminMnews extends StatefulWidget {
   const AdminMnews({Key? key}) : super(key: key);
@@ -25,7 +26,7 @@ class AdminMnews extends StatefulWidget {
 
 class _AdminMnewsState extends State<AdminMnews> {
 
-  late Stream<AdminMnewsModel> stream = Stream.periodic(Duration(seconds: 5))
+  late Stream<AdminMayyatModel> stream = Stream.periodic(Duration(seconds: 1))
       .asyncMap((event) async => await getMayyatNews());
 
 
@@ -38,39 +39,49 @@ class _AdminMnewsState extends State<AdminMnews> {
   TextEditingController searchController = TextEditingController();
   bool showFlaotingButton = true;
 
-  Future<AdminMnewsModel> getMayyatNews() async {
+  AdminMayyatModel dummyData = AdminMayyatModel();
+
+
+  Future<AdminMayyatModel> getMayyatNews() async {
 
     final SharedPreferences sharedPreferences =
     await SharedPreferences.getInstance();
     var getUserId = sharedPreferences.getString('currentUserid');
-    print(getUserId);
 
     var url =
-        "https://aeliya.000webhostapp.com/adminMayyatNews.php?id=$getUserId";
+        "https://aeliya.000webhostapp.com/adminMayyatNews.php?id=$getUserId&pageNo=$currentPage";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
-    var _apiData = AdminMnewsModel.fromJson(jsondata);
+    var _apiData = AdminMayyatModel.fromJson(jsondata);
+
+    var newData = [...?dummyData.data, ...?_apiData.data];
 
     if (response.statusCode == 200) {
 
       if(isRefersh == true){
         setState((){
           isRefersh = false;
+          searchController.text ="";
         });
         refreshController.refreshCompleted();
-        return AdminMnewsModel.fromJson(jsondata);
       }
       else{
-        print(_apiData.hasNextPage.toString());
-        if(_apiData.hasNextPage == 0){
+        if(currentPage == _apiData.pages){
           refreshController.loadNoData();
         }else{
           refreshController.loadComplete();
         }
-        return AdminMnewsModel.fromJson(jsondata);
       }
+
+      final refids = newData.map((e) => e.refId).toSet();
+      newData.retainWhere((ids) => refids.remove(ids.refId));
+      //dummyData.data = newData.toSet().toList();
+      dummyData.data = newData;
+
+      return dummyData;
+
     } else {
-      return AdminMnewsModel.fromJson(jsondata);
+      return dummyData;
     }
   }
 
@@ -95,7 +106,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                       textController: searchController
                         ..addListener(() {
                           setState(() {
-                            searchText = searchController.text;
+                            searchText = searchController.text.trim();
                           });
                         }),
                       closeSearchOnSuffixTap: true,
@@ -113,9 +124,9 @@ class _AdminMnewsState extends State<AdminMnews> {
                   //child: Container()
                 ),
                 Expanded(
-                    child: StreamBuilder<AdminMnewsModel>(
+                    child: StreamBuilder<AdminMayyatModel>(
                       stream: stream,
-                      builder: (context,AsyncSnapshot<AdminMnewsModel> snapshot) {
+                      builder: (context,AsyncSnapshot<AdminMayyatModel> snapshot) {
                         if (snapshot.hasData) {
                           return SmartRefresher(
                             controller: refreshController,
@@ -258,8 +269,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                               shape: BoxShape.circle),
                                                           child: IconButton(
                                                               onPressed: () {
-                                                                print("delete tap");
-                                                                _showDeleteDialog(postList.refId);
+                                                                _showDeleteDialog(postList.refId,postList.imagePath);
                                                               },
                                                               icon: Icon(
                                                                 Icons.delete_forever,
@@ -390,62 +400,6 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                               color:
                                                               Colors.white)),
                                                     ),
-
-                                                    //for share post to other app
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: IconButton(
-                                                        icon: Icon(Icons.share,color: Colors.white,),
-                                                        onPressed: () async{
-
-                                                          //for image
-                                                          if (postList.imagePath == null){
-                                                            await Share.share(subject:
-                                                            "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
-                                                                "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
-                                                                    "\n \n 🔊 Azadari Schedule App  \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-
-                                                          }else{
-                                                            final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
-                                                            final url = Uri.parse(urlImage);
-                                                            final response = await http.get(url);
-                                                            final bytes = response.bodyBytes;
-
-                                                            //for temporary store image in device
-                                                            final temp = await getTemporaryDirectory();
-                                                            final path = '${temp.path}/image.jpg';
-                                                            File(path).writeAsBytesSync(bytes);
-
-                                                            await Share.shareXFiles([XFile(path)],
-                                                                subject: "Azadari Schedule app",
-                                                                text:
-
-                                                                "⬛ Azadari Schedule App ⬛ \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-                                                          }
-
-                                                        },
-                                                      ),
-                                                    ),
                                                   ],
                                                 ),
                                               ],
@@ -456,7 +410,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                                     );
 
                                   } else if (tempSearch.toLowerCase().contains(
-                                      searchController.text.toString())) {
+                                      searchController.text.toString().trim())) {
                                     return Padding(
                                       padding: EdgeInsets.only(left: 5, right: 5),
                                       child: Card(
@@ -583,8 +537,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                               shape: BoxShape.circle),
                                                           child: IconButton(
                                                               onPressed: () {
-                                                                print("delete tap");
-                                                                _showDeleteDialog(postList.refId);
+                                                                _showDeleteDialog(postList.refId,postList.imagePath);
                                                               },
                                                               icon: Icon(
                                                                 Icons.delete_forever,
@@ -795,15 +748,14 @@ class _AdminMnewsState extends State<AdminMnews> {
                             },
 
                             onLoading: () async {
-                              if(snapshot.data!.hasNextPage == 0){
+                              if(currentPage == snapshot.data!.pages){
                                 refreshController.loadNoData();
                               }else{
                                 setState(() {
                                   currentPage++;
-                                  //snapshot.data!.data!.addAll(snapshot.data!.data!.toList());
                                 });
-                                await Future.delayed(Duration(milliseconds: 1000));
-                                refreshController.loadComplete();
+                                // await Future.delayed(Duration(milliseconds: 1000));
+                                // refreshController.loadComplete();
                               }
 
                             },
@@ -855,7 +807,7 @@ class _AdminMnewsState extends State<AdminMnews> {
   }
 
   chekImage(String imagepath) {
-    if(imagepath == "null"){
+    if(imagepath.isEmpty){
       print("null");
       print(imagepath);
       return
@@ -869,7 +821,7 @@ class _AdminMnewsState extends State<AdminMnews> {
 
   }
 
-  Future<void> _showDeleteDialog(String? refId) async {
+  Future<void> _showDeleteDialog(String? refId, String? imagePath) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
@@ -883,7 +835,6 @@ class _AdminMnewsState extends State<AdminMnews> {
                     fontSize: 15),),
               onPressed: () {
                 Navigator.of(context).pop();
-                print('Confirmed');
                 showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -894,7 +845,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                         ),
                       );
                     });
-                deletePost(refId);
+                deletePost(refId,imagePath);
               },
             ),
             TextButton(
@@ -913,19 +864,53 @@ class _AdminMnewsState extends State<AdminMnews> {
   }
 
 
-  Future<void> deletePost(String? refId) async {
+  Future<void> deletePost(String? refId, String? imagePath) async {
     var url = "https://aeliya.000webhostapp.com/deleteMayyatNews.php?refId=$refId";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
 
     if (response.statusCode == 200) {
-      print("deleted");
-      Navigator.of(context).pop();
-      Fluttertoast.showToast(msg: "Deleted successfully",
-          backgroundColor: Color(hexColors("006064")));
+      if(imagePath!.isEmpty){
+        dummyData.data!.clear();
+        Navigator.pop(context);
+        Fluttertoast.showToast(msg: "Deleted successfully",
+            backgroundColor: Color(hexColors("006064")));
+      }else{
+        DeleteImage(refId,imagePath);
+      }
     } else {
       Fluttertoast.showToast(msg: "something went wrong",
           backgroundColor: Color(hexColors("006064")));
     }
   }
+
+
+  Future DeleteImage(String? refId, String? imagePath) async {
+
+    var url = Uri.parse("https://aeliya.000webhostapp.com/deleteMayyatNews.php?refId=$refId");
+
+    Map mapeddate = {
+      'imgPath': imagePath
+    };
+    print("JSON DATA : ${mapeddate}");
+    http.Response response = await http.post(url, body: mapeddate);
+
+    if (response.statusCode == 200) {
+      dummyData.data!.clear();
+      // ignore: use_build_context_synchronously
+      var data = jsonDecode(response.body);
+      print("Data:- $data");
+      Navigator.pop(context);
+      Fluttertoast.showToast(msg: "Deleted successfully",
+          backgroundColor: Color(hexColors("006064")));
+    } else {
+      print("failed");
+      Fluttertoast.showToast(msg: "Some thing went wrong",
+          backgroundColor: Color(hexColors("006064")));
+      // ignore: use_build_context_synchronously
+      Navigator.of(context).pop();
+    }
+  }
+
+
 }

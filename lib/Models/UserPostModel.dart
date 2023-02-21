@@ -28,7 +28,7 @@ class UserPostModel {
 }
 
   UserPostModel.fromJson(dynamic json) {
-    _status = json['status'];
+    _status = json['status'] == "true";
     _result = json['result'];
     if (json['data'] != null) {
       _data = [];
@@ -70,6 +70,7 @@ UserPostModel copyWith({  bool? status,
   bool? get status => _status;
   String? get result => _result;
   List<Data>? get data => _data;
+  set data(List<Data>? data) => _data = data;
   String? get totalPosts => _totalPosts;
   num? get totalPages => _totalPages;
   num? get perPageLimit => _perPageLimit;

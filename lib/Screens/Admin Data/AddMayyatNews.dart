@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:mahuva_azadari/Screens/Admin%20Data/Admin%20M_News.dart';
+import 'package:mahuva_azadari/Screens/Admin%20Data/AdminPannel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../Models/Hexa color.dart';
 import 'package:image_picker/image_picker.dart';
@@ -106,13 +105,14 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                             Mname = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty ? 'Please Enter MarhumName' : null;
+                            return value!.trim().isEmpty ? 'Please Enter MarhumName' : null;
                           },
                         ),
                         SizedBox(
                           height: 10,
                         ),
                         TextFormField(
+                          maxLength: 15,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -129,7 +129,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                             city = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty
+                            return value!.trim().isEmpty
                                 ? 'Enter City Name'
                                 : null;
                           },
@@ -156,7 +156,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                             address = value;
                           },
                           validator: (value) {
-                            return value!.isEmpty ? 'Enter Description' : null;
+                            return value!.trim().isEmpty ? 'Enter Description' : null;
                           },
                         ),
                         SizedBox(
@@ -175,19 +175,21 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                                 ),
                                 height: 50,
                                 width: 120,
-                                child: InkWell(
-                                    onTap: () {
-                                      FocusManager.instance.primaryFocus?.unfocus();
-                                      pickDate(context);
-                                    },
-                                    child: Text(
-                                      _date,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 18),
-                                    )),
+                                child: Center(
+                                  child: InkWell(
+                                      onTap: () {
+                                        FocusManager.instance.primaryFocus?.unfocus();
+                                        pickDate(context);
+                                      },
+                                      child: Text(
+                                        _date,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 18),
+                                      )),
+                                ),
                               ),
                             ),
                             Expanded(
@@ -200,21 +202,23 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                                 ),
                                 height: 50,
                                 width: 120,
-                                child: InkWell(
-                                    onTap: () {
-                                      FocusManager.instance.primaryFocus?.unfocus();
-                                      pickMTime(context);
-                                    },
-                                    child: Text(
-                                      _Mtime,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 18,
-                                      ),
-                                    )),
+                                child: Center(
+                                  child: InkWell(
+                                      onTap: () {
+                                        FocusManager.instance.primaryFocus?.unfocus();
+                                        pickMTime(context);
+                                      },
+                                      child: Text(
+                                        _Mtime,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontStyle: FontStyle.italic,
+                                          fontSize: 18,
+                                        ),
+                                      )),
+                                ),
                               ),
                             ),
                         SizedBox(
@@ -231,21 +235,23 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                             ),
                             height: 50,
                             width: 120,
-                            child: InkWell(
-                                onTap: () {
-                                  FocusManager.instance.primaryFocus?.unfocus();
-                                  pickNTime(context);
-                                },
-                                child: Text(
-                                  _Ntime,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontStyle: FontStyle.italic,
-                                    fontSize: 18,
-                                  ),
-                                )),
+                            child: Center(
+                              child: InkWell(
+                                  onTap: () {
+                                    FocusManager.instance.primaryFocus?.unfocus();
+                                    pickNTime(context);
+                                  },
+                                  child: Text(
+                                    _Ntime,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 18,
+                                    ),
+                                  )),
+                            ),
                           ),
 
                         SizedBox(
@@ -365,9 +371,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
         context: context,
         initialDate: initialDate,
         firstDate: DateTime.now(),
-        lastDate: DateTime(DateTime
-            .now()
-            .year + 1)
+        lastDate: DateTime.now()
     );
 
     if (newDate != null) {
@@ -442,15 +446,15 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
 
         if (response.statusCode == 200) {
           print("Success");
+          Navigator.pop(context);
           sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
               "City : ${city}, Mayyat Time : ${_Mtime}");
           Fluttertoast.showToast(msg: "Your post is published",
               backgroundColor: Color(
                   hexColors("006064")));
-          Navigator.push(context, MaterialPageRoute(builder: (context) => AdminMnews()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPannel()));
           var data = jsonDecode(response.body);
           print("Data:- $data");
-          Navigator.pop(context);
         } else {
           print("failed");
           Fluttertoast.showToast(msg: "Some thing went wrong",
@@ -500,7 +504,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
         Fluttertoast.showToast(msg: "Your post is published",
             backgroundColor: Color(
                 hexColors("006064")));
-        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPannel()));
       }else{
         Navigator.pop(context);
         print("NOT suuccess");

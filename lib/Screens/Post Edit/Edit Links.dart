@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:mahuva_azadari/Screens/Admin%20Data/AdminPannel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../Models/Hexa color.dart';
 import '../../Models/Round Button.dart';
@@ -12,10 +13,9 @@ import '../Admin Data/Admin Links.dart';
 class EditLinks extends StatefulWidget {
   String elink;
   String ecity;
-  String echannel;
   String refid;
 
-  EditLinks(this.elink,this.ecity,this.echannel,this.refid, {super.key});
+  EditLinks(this.elink,this.ecity,this.refid, {super.key});
 
   @override
   State<EditLinks> createState() => _EditLinksState();
@@ -38,11 +38,11 @@ class _EditLinksState extends State<EditLinks> {
     super.initState();
     YoutubeLinkController.text = widget.elink;
     CityController.text = widget.ecity;
-    channelNameController.text = widget.echannel;
+
 
     YoutubeLink = widget.elink;
     City= widget.ecity;
-    channelName = widget.echannel;
+
   }
 
 
@@ -127,31 +127,31 @@ class _EditLinksState extends State<EditLinks> {
                                   : null;
                             },
                           ),
-                          SizedBox(height: 10,),
-                          TextFormField(
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                //fontStyle: FontStyle.italic,
-                                fontSize: 18
-                            ),
-                            controller: channelNameController,
-                            keyboardType: TextInputType.text,
-                            decoration: InputDecoration(
-                              hintText: "Channel Name",
-                              labelText: "Channel Name",
-                              border: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white),
-                                  borderRadius: BorderRadius.circular(15)),
-                            ),
-                            onChanged: (value) {
-                              channelName = value;
-                            },
-                            validator: (value) {
-                              return value!.isEmpty
-                                  ? 'Please Enter Channel Name'
-                                  : null;
-                            },
-                          ),
+                          // SizedBox(height: 10,),
+                          // TextFormField(
+                          //   style: TextStyle(
+                          //       fontWeight: FontWeight.w700,
+                          //       //fontStyle: FontStyle.italic,
+                          //       fontSize: 18
+                          //   ),
+                          //   controller: channelNameController,
+                          //   keyboardType: TextInputType.text,
+                          //   decoration: InputDecoration(
+                          //     hintText: "Channel Name",
+                          //     labelText: "Channel Name",
+                          //     border: OutlineInputBorder(
+                          //         borderSide: BorderSide(color: Colors.white),
+                          //         borderRadius: BorderRadius.circular(15)),
+                          //   ),
+                          //   onChanged: (value) {
+                          //     channelName = value;
+                          //   },
+                          //   validator: (value) {
+                          //     return value!.isEmpty
+                          //         ? 'Please Enter Channel Name'
+                          //         : null;
+                          //   },
+                          // ),
                           SizedBox(height: 20,),
                           RoundButton(title: "Update",
                               onPress: () {
@@ -213,7 +213,13 @@ class _EditLinksState extends State<EditLinks> {
       Navigator.pop(context);
       var data = jsonDecode(response.body);
       print("Data:- $data");
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminLinks()));
+      Fluttertoast.showToast(msg: "Your post is updated",
+          backgroundColor: Color(hexColors("006064")));
+      Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminPannel()));
+
+      sendNotification("Update Live Progeam",
+          "${getUserName} ${City}");
+
     } else {
       print("failed");
       Fluttertoast.showToast(msg: "Some thing went wrong",
@@ -222,4 +228,40 @@ class _EditLinksState extends State<EditLinks> {
       Navigator.of(context).pop();
     }
   }
+
+
+  //send message to all user
+  void sendNotification(String title, String body) async{
+    try{
+      await http.post(
+        Uri.parse("https://fcm.googleapis.com/fcm/send"),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+        },
+        body: jsonEncode(
+          <String, dynamic>{
+            'priority': 'high',
+            'data': <String, dynamic>{
+              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+              'status': 'done',
+              'body': body,
+              'title': title,
+            },
+            "notification":<String,dynamic>{
+              "title":title,
+              "body": body,
+              "android_channel_id":"taki"
+            },
+            //"to":token1,
+            "to":"/topics/allNotification",
+          },
+        ),
+      );
+    }catch(error){
+      print(error);
+    }
+
+  }
+
 }

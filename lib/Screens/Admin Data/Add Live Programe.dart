@@ -75,7 +75,7 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
                               YoutubeLink = value;
                             },
                             validator: (value) {
-                              if (value!.isEmpty || !RegExp(
+                              if (value!.trim().isEmpty || !RegExp(
                                   r'((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?')
                                   .hasMatch(YoutubeLink!)) {
                                 return 'please enter valid link';
@@ -104,33 +104,8 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
                               City = value;
                             },
                             validator: (value) {
-                              return value!.isEmpty
+                              return value!.trim().isEmpty
                                   ? 'Please Enter City'
-                                  : null;
-                            },
-                          ),
-                          SizedBox(height: 10,),
-                          TextFormField(
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                //fontStyle: FontStyle.italic,
-                                fontSize: 18
-                            ),
-                            controller: channelNameController,
-                            keyboardType: TextInputType.text,
-                            decoration: InputDecoration(
-                              hintText: "Channel Name",
-                              labelText: "Channel Name",
-                              border: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white),
-                                  borderRadius: BorderRadius.circular(15)),
-                            ),
-                            onChanged: (value) {
-                              channelName = value;
-                            },
-                            validator: (value) {
-                              return value!.isEmpty
-                                  ? 'Please Enter Channel Name'
                                   : null;
                             },
                           ),
@@ -194,7 +169,11 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
       Navigator.pop(context);
       var data = jsonDecode(response.body);
       print("Data:- $data");
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminLinks()));
+      Navigator.pop(context);
+
+      sendNotification("Live Program Added",
+          "${getUserName} ${City}");
+
     } else {
       print("failed");
       Fluttertoast.showToast(msg: "Some thing went wrong",
@@ -204,5 +183,39 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
     }
   }
 
+
+  //send message to all user
+  void sendNotification(String title, String body) async{
+    try{
+      await http.post(
+        Uri.parse("https://fcm.googleapis.com/fcm/send"),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+        },
+        body: jsonEncode(
+          <String, dynamic>{
+            'priority': 'high',
+            'data': <String, dynamic>{
+              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+              'status': 'done',
+              'body': body,
+              'title': title,
+            },
+            "notification":<String,dynamic>{
+              "title":title,
+              "body": body,
+              "android_channel_id":"taki"
+            },
+            //"to":token1,
+            "to":"/topics/allNotification",
+          },
+        ),
+      );
+    }catch(error){
+      print(error);
+    }
+
+  }
 
 }
