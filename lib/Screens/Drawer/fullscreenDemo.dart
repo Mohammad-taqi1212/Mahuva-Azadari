@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:http/http.dart' as http;
 import '../../Models/Hexa color.dart';
@@ -16,7 +18,6 @@ class fullScreen extends StatefulWidget {
 }
 
 class _fullScreenState extends State<fullScreen> {
-
   late Stream<LinkModel> stream = Stream.periodic(Duration(seconds: 5))
       .asyncMap((event) async => await getAllLinks());
 
@@ -24,30 +25,35 @@ class _fullScreenState extends State<fullScreen> {
   final RefreshController refreshController = RefreshController();
   int currentPage = 1;
   bool isRefersh = false;
+  Color? ContainerColor;
 
   LinkModel dummyData = LinkModel();
 
   Future<LinkModel> getAllLinks() async {
-    var url = "https://aeliya.000webhostapp.com/MajlisLinks.php?page=$currentPage";
-    var response = await http.get(Uri.parse(url));
+    var url =
+        //"https://aeliya.000webhostapp.com/MajlisLinks.php?page=$currentPage";
+        "${masterUrl}MajlisLinks.php?page=$currentPage";
+    var response = await http.get(Uri.parse(url)).timeout(Duration(seconds: 20),
+        onTimeout: () {
+      Fluttertoast.showToast(
+          msg: "Server time out", backgroundColor: Color(hexColors("006064")));
+      return http.Response('Error', 408);
+    });
     var jsondata = jsonDecode(response.body.toString());
     var _apiData = LinkModel.fromJson(jsondata);
-
 
     var newData = [...?dummyData.data, ...?_apiData.data];
 
     if (response.statusCode == 200) {
-
-      if(isRefersh == true){
-        setState((){
+      if (isRefersh == true) {
+        setState(() {
           isRefersh = false;
         });
         refreshController.refreshCompleted();
-      }
-      else{
-        if(_apiData.hasNextPage == 0){
+      } else {
+        if (_apiData.hasNextPage == 0) {
           refreshController.loadNoData();
-        }else{
+        } else {
           refreshController.loadComplete();
         }
         final refids = newData.map((e) => e.refId).toSet();
@@ -73,15 +79,25 @@ class _fullScreenState extends State<fullScreen> {
         mute: false,
         showFullscreenButton: true,
         loop: false,
-      )
+        // onEnterFullscreen: _onEnterFullScreen,
+        // onExitFullscreen: _onExitFullScreen,
+      ),
     );
 
     _controller.setFullScreenListener(
-          (isFullScreen) {
+      (isFullScreen) {
         log('${isFullScreen ? 'Entered' : 'Exited'} Fullscreen.');
       },
     );
   }
+
+  // void _onEnterFullScreen() {
+  //   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+  // }
+  //
+  // void _onExitFullScreen() {
+  //   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+  // }
 
   @override
   void dispose() {
@@ -97,99 +113,175 @@ class _fullScreenState extends State<fullScreen> {
       builder: (context, player) {
         return SafeArea(
             child: Scaffold(
-              appBar: AppBar(title: Text("Live Program",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 25
-                ),),
-                centerTitle: true,
-                backgroundColor: Color(hexColors('006064')),
-              ),
-              body: StreamBuilder<LinkModel>(
-                stream: stream,
-                builder: (context,snapshot){
-                  if(snapshot.hasData){
-                    return SmartRefresher(
-                      controller: refreshController,
-                      enablePullUp: true,
-                      child: ListView.builder(
-                        itemCount: snapshot.data!.data!.length,
-                          itemBuilder: (context, index){
+              backgroundColor: Colors.white,
+          appBar: AppBar(
+            title: Text(
+              "Live Program",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
+            ),
+            centerTitle: true,
+            backgroundColor: Color(hexColors('006064')),
+          ),
+          body: StreamBuilder<LinkModel>(
+            stream: stream,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return SmartRefresher(
+                  controller: refreshController,
+                  enablePullUp: true,
+                  child: ListView.builder(
+                      itemCount: snapshot.data!.data!.length,
+                      itemBuilder: (context, index) {
                         var allItem = snapshot.data!.data![index];
-                        var videoId = allItem.link!.substring(17);
+
+                        //following regex for both link live and not live
+                        RegExp regExp = new RegExp(
+                            r'.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|live\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*',
+                            caseSensitive: false,
+                            multiLine: false);
+
+                        //following regexp for only non live youtube video
+                        // RegExp regExp = new RegExp(
+                        //   r'.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*',
+                        //   caseSensitive: false,
+                        //   multiLine: false,
+                        // );
+                        final match = regExp
+                            .firstMatch(allItem.link.toString())!
+                            .group(1);
+                        var videoId = match;
+
+                        if (allItem.status == "Ongoing") {
+                          ContainerColor = Colors.green;
+                        } else if (allItem.status == "Upcoming") {
+                          ContainerColor = Colors.blue;
+                        } else {
+                          ContainerColor = Colors.red;
+                        }
+
+                        //var videoId = allItem.link!.substring(17);
                         return Card(
-                          color: Color(hexColors("03A9F4")),
+                          color: Color(hexColors("009688")),
                           elevation: 6,
                           shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(10.0)),
+                              borderRadius: BorderRadius.circular(10.0)),
+
                           child: Column(
                             children: [
-                             YoutubePlayer(
-                               controller: _controller = YoutubePlayerController.fromVideoId(videoId: videoId,
-                               autoPlay: false,
-                               params: YoutubePlayerParams(showFullscreenButton: true ))
-                                 ),
-                              SizedBox(height: 5,),
-                              Text("City :- ${allItem.city}",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15
-                              ),),
+                              YoutubePlayer(
+                                controller: _controller =
+                                    YoutubePlayerController.fromVideoId(
+                                        videoId: videoId.toString(),
+                                        autoPlay: false,
+                                        params: YoutubePlayerParams(
+                                            showFullscreenButton: true)),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Container(
+                                      width: 100,
+                                      margin: EdgeInsets.all(5.0),
+                                      padding: EdgeInsets.all(5.0),
+                                      decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          border:
+                                              Border.all(color: Colors.white),
+                                          color: ContainerColor),
+                                      child: Center(
+                                        child: Text(
+                                          allItem.status!,
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold
+                                              //backgroundColor: Colors.red
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        "City :- ${allItem.city}",
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
                               Padding(
-                                padding: const EdgeInsets.all(10.0),
+                                padding: const EdgeInsets.all(8.0),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(allItem.username.toString()),
-                                    Text(allItem.postDateTime.toString()),
-                                    IconButton(onPressed: () async{
-                                      await Share.share(allItem.link.toString());
-                                    },
-                                        icon: Icon(Icons.share,color: Colors.white))
+                                    Expanded(
+                                      child: Text(
+                                        allItem.username.toString(),
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                    Text(
+                                      allItem.postDateTime.toString(),
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    IconButton(
+                                        onPressed: () async {
+                                          await Share.share(
+                                              "${allItem.link.toString()} \n \n"
+                                              "For all Live program app Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n");
+                                        },
+                                        icon: Icon(Icons.share,
+                                            color: Colors.white))
                                   ],
                                 ),
                               )
                             ],
                           ),
-
                         );
-                      }
-                      ),
-
-                      onRefresh: () async{
-                        await Future.delayed(Duration(milliseconds: 1000));
-                        setState(() {
-                          isRefersh = true;
-                          currentPage = 1;
-                        });
-                      },
-
-                      onLoading: () async {
-                        print("**********************************************************");
-                        print(snapshot.data!.hasNextPage.toString());
-                        if(snapshot.data!.hasNextPage == 0){
-                          refreshController.loadNoData();
-                        }else{
-                          setState(() {
-                            currentPage++;
-                          });
-                          // await Future.delayed(Duration(milliseconds: 1000));
-                          // refreshController.loadComplete();
-                        }
-
-                      },
-                    );
-                  }else{
-                    return Container(child: Center(child: CircularProgressIndicator(),),);
-                  }
-
-                },
-              ),
-            )
-        );
+                      }),
+                  onRefresh: () async {
+                    await Future.delayed(Duration(milliseconds: 1000));
+                    setState(() {
+                      isRefersh = true;
+                      currentPage = 1;
+                    });
+                  },
+                  onLoading: () async {
+                    print(
+                        "**********************************************************");
+                    print(snapshot.data!.hasNextPage.toString());
+                    if (snapshot.data!.hasNextPage == 0) {
+                      refreshController.loadNoData();
+                    } else {
+                      setState(() {
+                        currentPage++;
+                      });
+                      // await Future.delayed(Duration(milliseconds: 1000));
+                      // refreshController.loadComplete();
+                    }
+                  },
+                );
+              } else {
+                return Container(
+                  child: Center(
+                    child: Image.asset('assets/Ovals.gif'),
+                  ),
+                );
+              }
+            },
+          ),
+        ));
       },
     );
-}
+  }
 }

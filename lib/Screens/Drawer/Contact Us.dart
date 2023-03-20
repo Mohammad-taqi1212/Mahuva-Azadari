@@ -40,6 +40,7 @@ class _ContactUsState extends State<ContactUs> {
               child: Column(
                 children: [
                   TextFormField(
+                    maxLength: 60,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 18
@@ -58,7 +59,7 @@ class _ContactUsState extends State<ContactUs> {
                       _subject = value;
                     },
                     validator: (value) {
-                      return value!.isEmpty ? 'Enter Subject' : null;
+                      return value!.trim().isEmpty ? 'Enter Subject' : null;
                     },
                   ),
                   SizedBox(
@@ -84,7 +85,7 @@ class _ContactUsState extends State<ContactUs> {
                       _body = value;
                     },
                     validator: (value) {
-                      return value!.isEmpty ? 'Write some text' : null;
+                      return value!.trim().isEmpty ? 'Write some text' : null;
                     },
                   ),
                   SizedBox(
@@ -95,8 +96,6 @@ class _ContactUsState extends State<ContactUs> {
                     //close keyboard
                         FocusManager.instance.primaryFocus?.unfocus();
                         if(_formkey.currentState!.validate()){
-                          showDialog(context: context,
-                              builder: (context)=> Container(child: Center(child: CircularProgressIndicator(),),));
                           sendEmail(_subject.toString(), _body.toString(), "mohammadrajani5@gmail.com");
                         }
                       })
@@ -126,8 +125,8 @@ class _ContactUsState extends State<ContactUs> {
       _bodyController.text = "";
       Navigator.pop(context);
     }catch(e){
-      Fluttertoast.showToast(msg: e.toString(),
-          backgroundColor: Color(hexColors("006064")));
+      // Fluttertoast.showToast(msg: e.toString(),
+      //     backgroundColor: Color(hexColors("006064")));
       Navigator.pop(context);
     }
 

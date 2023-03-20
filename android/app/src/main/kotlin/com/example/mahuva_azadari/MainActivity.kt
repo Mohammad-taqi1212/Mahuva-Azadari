@@ -1,4 +1,4 @@
-package com.example.mahuva_azadari
+package com.aleyia_azadari_schedule
 
 import io.flutter.embedding.android.FlutterActivity
 

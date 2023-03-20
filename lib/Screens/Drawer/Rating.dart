@@ -79,7 +79,7 @@ class _ratingStarState extends State<ratingStar> {
                   onPress: (){
                 FocusManager.instance.primaryFocus?.unfocus();
                 StoreRedirect.redirect(
-                  androidAppId: "com.example.mahuva_azadari"
+                  androidAppId: "com.aleyia_azadari_schedule"
                 );
                   })
             ],

@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mahuva_azadari/Models/Hexa%20color.dart';
@@ -7,7 +8,9 @@ import 'package:overlay_support/overlay_support.dart';
 import 'Screens/Admin Data/Add Live Programe.dart';
 
 
-void main(){
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(_required());
 
   //for globally describe status bar color

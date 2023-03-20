@@ -68,7 +68,8 @@ class _AdminLinksState extends State<AdminLinks> {
     await SharedPreferences.getInstance();
     var getUserId = sharedPreferences.getString('currentUserid');
 
-    var url = "https://aeliya.000webhostapp.com/adminLinks.php?id=$getUserId&pageNo=$currentPage";
+    //var url = "https://aeliya.000webhostapp.com/adminLinks.php?id=$getUserId&pageNo=$currentPage";
+    var url = "${masterUrl}adminLinks.php?id=$getUserId&pageNo=$currentPage";
     print(url);
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
@@ -114,6 +115,7 @@ class _AdminLinksState extends State<AdminLinks> {
       builder: (context,player){
         return SafeArea(
           child: Scaffold(
+            backgroundColor: Colors.white,
             body: StreamBuilder<AdminLinksModel>(
               stream: stream,
               builder: (context, snapshot){
@@ -125,7 +127,14 @@ class _AdminLinksState extends State<AdminLinks> {
                         itemCount: snapshot.data!.data!.length,
                         itemBuilder: (context, index){
                           var allItem = snapshot.data!.data![index];
-                          var videoId = allItem.link!.substring(17);
+                          //following regex for both link live and not live
+                          RegExp regExp = new RegExp(r'.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|live\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*',
+                              caseSensitive: false, multiLine: false);
+                          final match = regExp.firstMatch(allItem.link.toString())!.group(1);
+                          var videoId = match;
+
+
+
                           return Card(
                             color: Color(hexColors("03A9F4")),
                             elevation: 6,
@@ -135,7 +144,7 @@ class _AdminLinksState extends State<AdminLinks> {
                             child: Column(
                               children: [
                                 YoutubePlayer(
-                                    controller: _controller = YoutubePlayerController.fromVideoId(videoId: videoId,
+                                    controller: _controller = YoutubePlayerController.fromVideoId(videoId: videoId.toString(),
                                         autoPlay: false,
                                         params: YoutubePlayerParams(showFullscreenButton: true ))
                                 ),
@@ -145,12 +154,14 @@ class _AdminLinksState extends State<AdminLinks> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text("City :- ${allItem.city}",
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15
-                                        ),),
+                                      Expanded(
+                                        child: Text("City :- ${allItem.city}",
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15
+                                          ),),
+                                      ),
                                       Row(
                                         mainAxisAlignment:
                                         MainAxisAlignment.end,
@@ -197,6 +208,14 @@ class _AdminLinksState extends State<AdminLinks> {
                                                   color: Colors.red,
                                                 )),
                                           ),
+                                          SizedBox(
+                                            width: 5,
+                                          ),
+                                          IconButton(onPressed: () async{
+                                            await Share.share("${allItem.link.toString()} \n"
+                                                "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n");
+                                          },
+                                              icon: Icon(Icons.share,color: Colors.white))
                                         ],
                                       ),
                                     ],
@@ -253,20 +272,20 @@ class _AdminLinksState extends State<AdminLinks> {
                                 //     ],
                                 //   ),
                                 // ),
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(allItem.username.toString()),
-                                      Text(allItem.postDateTime.toString()),
-                                      IconButton(onPressed: () async{
-                                        await Share.share(allItem.link.toString());
-                                      },
-                                          icon: Icon(Icons.share,color: Colors.white))
-                                    ],
-                                  ),
-                                )
+                                // Padding(
+                                //   padding: const EdgeInsets.all(10.0),
+                                //   child: Row(
+                                //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                //     children: [
+                                //       Text(allItem.username.toString()),
+                                //       Text(allItem.postDateTime.toString()),
+                                //       IconButton(onPressed: () async{
+                                //         await Share.share(allItem.link.toString());
+                                //       },
+                                //           icon: Icon(Icons.share,color: Colors.white))
+                                //     ],
+                                //   ),
+                                // )
                               ],
                             ),
 
@@ -299,7 +318,7 @@ class _AdminLinksState extends State<AdminLinks> {
                 }
                 else if(snapshot.connectionState == ConnectionState.waiting){
                   return Center(
-                    child: CircularProgressIndicator(),
+                    child: Image.asset('assets/Ovals.gif'),
                   );
                 }else if (snapshot.hasError) {
                   return Center(
@@ -364,7 +383,8 @@ class _AdminLinksState extends State<AdminLinks> {
 
 
   Future<void> deletePost(String? refId) async {
-    var url = "https://aeliya.000webhostapp.com/deleteLink.php?refId=$refId";
+    //var url = "https://aeliya.000webhostapp.com/deleteLink.php?refId=$refId";
+    var url = "${masterUrl}deleteLink.php?refId=$refId";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
 

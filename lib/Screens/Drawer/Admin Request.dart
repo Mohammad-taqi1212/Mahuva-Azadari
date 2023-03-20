@@ -27,6 +27,7 @@ class _AdminReqState extends State<AdminReq> {
   String? storeUserID;
   bool isLogin = false;
   String? storeUserName;
+  bool showButton = false;
 
 
   @override
@@ -41,6 +42,7 @@ class _AdminReqState extends State<AdminReq> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(title:
         Text("Admin Request",
           style: TextStyle(
@@ -59,70 +61,111 @@ class _AdminReqState extends State<AdminReq> {
               children: [
                 Card(
                   color: Color(hexColors("00BCD4")),
-                  elevation: 6,
+                  //elevation: 6,
                   shape: RoundedRectangleBorder(
                       borderRadius:
                       BorderRadius.circular(10.0)),
                   child: Container(
                     padding: EdgeInsets.all(5),
                     margin: EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white),
+                      gradient: LinearGradient(
+                          colors: [
+                            //Color(hexColors("00BCD4")),
+                            // Colors.red,
+                            // Colors.pink,
+                            Color(hexColors("00796B")),
+                            Color(hexColors("26A69A")),
+                            Color(hexColors("00BFA5")),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.topRight
+                      ),
+                    ),
                     child: Text("Salamunalikum\n"
-                        "You are not admin, if you want to become admin "
-                        "please SIGNUP with google."
-                        "\n For admin request please describe your self in below box"
-                        "(Full name, city,"
-                        "you will handle all posts of your city in this app? etc) \n"
-                        "Note:- Your admin request will approve with in 3 working days"
-                        "\n please check here for your admin request results",
+                        "SignUp request will be processed and approved"
+                        "/Disapproved in 3 working days."
+                        "  (એડમીન ની પ્રક્રિયા મંજૂર/નામંજૂર ૩ કામકાજના "
+                        "દિવસોમાં થઈ જશે.)",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
-                          fontStyle: FontStyle.italic
+                          fontWeight: FontWeight.bold
                       ),),
                   ),
                 ),
-                SizedBox(
-                  height: 10,
-                ),
-                TextField(
-                  controller: descriptionController,
-                  maxLines: 3,
-                  cursorColor: Colors.blue,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18),
-                  keyboardType: TextInputType.multiline,
-                  decoration: InputDecoration(
-                    hintText: "Description",
-                    labelText: "Description",
-                    border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white),
-                        borderRadius: BorderRadius.circular(15)),
-                  ),
-                  onChanged: (value) {
-                    description = value;
-                  },
-                ),
+                // SizedBox(
+                //   height: 5,
+                // ),
+                // Padding(
+                //   padding: const EdgeInsets.all(8.0),
+                //   child: Container(
+                //     child: Text("Note : If you are already admin just write 'Admin' in description box",
+                //     style: TextStyle(
+                //       color: Colors.purple,
+                //       fontWeight: FontWeight.bold
+                //     ),),
+                //   ),
+                // ),
+                // TextField(
+                //   controller: descriptionController,
+                //   cursorColor: Colors.blue,
+                //   textCapitalization: TextCapitalization.words,
+                //   style: TextStyle(
+                //       fontWeight: FontWeight.w700,
+                //       fontSize: 18),
+                //   keyboardType: TextInputType.multiline,
+                //   decoration: InputDecoration(
+                //     hintText: "Description",
+                //     labelText: "Description",
+                //     border: OutlineInputBorder(
+                //         borderSide: BorderSide(color: Colors.white),
+                //         borderRadius: BorderRadius.circular(15)),
+                //   ),
+                //   onChanged: (value) {
+                //     description = value;
+                //   },
+                // ),
                 SizedBox(
                   height: 10,
                 ),
                 SignInButton(
-                    Buttons.Google,
+                    Buttons.GoogleDark,
                     elevation: 8,
-                    text: "Sign up with Google",
-                    onPressed: () {
+                    text: "Sign Up/Sign In with email",
+                    onPressed: () async{
                       FocusManager.instance.primaryFocus?.unfocus();
-                      if (descriptionController.text
-                          .trim()
-                          .isEmpty) {
-                        Fluttertoast.showToast(
-                            msg: "Please enter description",
-                            backgroundColor: Color(hexColors("006064")));
-                      } else {
-                        isSentRequest();
-                      }
-                    })
+                      // if (descriptionController.text
+                      //     .trim()
+                      //     .isEmpty) {
+                      //   Fluttertoast.showToast(
+                      //       msg: "Please enter description",
+                      //       backgroundColor: Color(hexColors("006064")));
+                      // } else {
+                      //   isSentRequest();
+                      // }
+                      isSentRequest();
+                    }),
+
+                Visibility(
+                  visible: showButton,
+                  child: TextButton(onPressed: () async{
+                    _googleSignIn.signOut();
+                    _googleSignIn.disconnect();
+                    SharedPreferences preferences = await SharedPreferences.getInstance();
+                    await preferences.clear();
+                    setState(() {
+                      showButton = false;
+                    });
+                    Fluttertoast.showToast(msg: "Requested email is cleared"
+                        ", Try to login or request",
+                    backgroundColor: Color(hexColors("006064")));
+                  },
+                      child: Text("Clear requested email")),
+                )
               ],
             ),
           ),
@@ -152,7 +195,7 @@ class _AdminReqState extends State<AdminReq> {
             context: context,
             builder: (context) {
               return Center(
-                child: CircularProgressIndicator(),
+                child: Image.asset('assets/Ovals.gif'),
               );
             });
         SharedPreferences sharedPreferences = await SharedPreferences
@@ -177,38 +220,36 @@ class _AdminReqState extends State<AdminReq> {
           ),
           content: Padding(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Expanded(
-              child: Container(
-                height: 250,
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Your admin request is already sent!",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20
-                      ),),
-                    Text("Your admin request is already sent, it will"
-                        " approve within 3 working days "
-                        "for check your admin status please check here"),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text("OK"),
+            child: Container(
+              height: 250,
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Your admin request is already sent!",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20
+                    ),),
+                  Text("Your admin request is already sent, it will"
+                      " approve within 3 working days "
+                      "for check your admin status please check here"),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
                       ),
-                    )
-                  ],
-                ),
+                      child: Text("OK"),
+                    ),
+                  )
+                ],
               ),
             ),
           )
@@ -225,39 +266,37 @@ class _AdminReqState extends State<AdminReq> {
           ),
           content: Padding(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Expanded(
-              child: Container(
-                height: 250,
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("$adminName! Your admin request is sent!",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20
-                      ),),
-                    Text("Your admin request is sent, it will"
-                        " approve within 3 working days "
-                        "for check you admin status please check here"),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          descriptionController.text = "";
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text("OK"),
+            child: Container(
+              height: 250,
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("$adminName! Your admin request is sent!",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20
+                    ),),
+                  Text("Your admin request is sent, it will"
+                      " approve within 3 working days "
+                      "for check you admin status please check here"),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        descriptionController.text = "";
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
                       ),
-                    )
-                  ],
-                ),
+                      child: Text("OK"),
+                    ),
+                  )
+                ],
               ),
             ),
           )
@@ -266,14 +305,14 @@ class _AdminReqState extends State<AdminReq> {
   }
 
   Future RegistarationUser() async {
-    var url = Uri.parse("https://aeliya.000webhostapp.com/admins.php");
+    //var url = Uri.parse("https://aeliya.000webhostapp.com/admins.php");
+    var url = Uri.parse("${masterUrl}admins.php");
 
     Map mapeddate = {
       'id': adminId,
       'name': adminName,
       'email': adminEmail,
       'isAdmin': "no",
-      'description': description
     };
     print("JSON DATA : ${mapeddate}");
     http.Response response = await http.post(url, body: mapeddate);
@@ -304,7 +343,8 @@ class _AdminReqState extends State<AdminReq> {
     final SharedPreferences sharedPreferences = await SharedPreferences
         .getInstance();
     var getUserId = sharedPreferences.getString('currentUserid');
-    var url = "https://aeliya.000webhostapp.com/checkUserAdmin.php?id=$getUserId";
+    //var url = "https://aeliya.000webhostapp.com/checkUserAdmin.php?id=$getUserId";
+    var url = "${masterUrl}checkUserAdmin.php?id=$getUserId";
     var response = await http.get(Uri.parse(url));
     var data = jsonDecode(response.body.toString());
 
@@ -332,20 +372,20 @@ class _AdminReqState extends State<AdminReq> {
     }
   }
 
-  loginStatus() async {
-    final SharedPreferences sharedPreferences = await SharedPreferences
-        .getInstance();
-    var isLogin = sharedPreferences.getBool('isLogin');
-
-    if (isLogin != null) {
-      if (isLogin == true) {
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => AdminPannel()));
-      } else {
-        getUserDetail();
-      }
-    }
-  }
+  // loginStatus() async {
+  //   final SharedPreferences sharedPreferences = await SharedPreferences
+  //       .getInstance();
+  //   var isLogin = sharedPreferences.getBool('isLogin');
+  //
+  //   if (isLogin != null) {
+  //     if (isLogin == true) {
+  //       Navigator.push(context,
+  //           MaterialPageRoute(builder: (context) => AdminPannel()));
+  //     } else {
+  //       getUserDetail();
+  //     }
+  //   }
+  // }
 
   isSentRequest() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
@@ -355,6 +395,9 @@ class _AdminReqState extends State<AdminReq> {
     }
     else {
       if (check == true) {
+        setState(() {
+          showButton = true;
+        });
         showUnderProcessDailog(context);
       }
     }

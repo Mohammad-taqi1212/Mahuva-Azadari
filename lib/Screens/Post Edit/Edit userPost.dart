@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:remove_emoji/remove_emoji.dart';
 import '../../Models/Hexa color.dart';
 import '../../Models/Round Button.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -43,8 +45,8 @@ class _EditUserPostState extends State<EditUserPost> {
   String? SpecialNotes;
   String? ScholarName;
   String? CityName;
-  List<String> programList = ['Majlis', 'Mehfil'];
-  String _MajlisMehfil = 'Majlis';
+  List<String> programList = ['Majlis', 'Mehfil','Event'];
+  String _MajlisMehfil = 'Select event';
   String imageUrlFire = "";
   File? _image;
 
@@ -118,7 +120,7 @@ class _EditUserPostState extends State<EditUserPost> {
       body:
       SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
           child: Column(
             children: [
               InkWell(
@@ -305,6 +307,7 @@ class _EditUserPostState extends State<EditUserPost> {
                             )),
                       ),
                       TextFormField(
+                        textCapitalization: TextCapitalization.words,
                         maxLength: 15,
                         controller: CityNameController,
                         style: TextStyle(
@@ -320,7 +323,7 @@ class _EditUserPostState extends State<EditUserPost> {
                               borderRadius: BorderRadius.circular(15)),
                         ),
                         onChanged: (value) {
-                          CityName = value;
+                          CityName = value.trim();
                         },
                         validator: (value) {
                           return value!.isEmpty ? 'Enter City' : null;
@@ -330,6 +333,7 @@ class _EditUserPostState extends State<EditUserPost> {
                         height: 10,
                       ),
                       TextFormField(
+                        textCapitalization: TextCapitalization.words,
                         maxLength: 40,
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
@@ -346,7 +350,7 @@ class _EditUserPostState extends State<EditUserPost> {
                               borderRadius: BorderRadius.circular(15)),
                         ),
                         onChanged: (value) {
-                          AzakhanaName = value;
+                          AzakhanaName = value.trim();
                         },
                         validator: (value) {
                           return value!.isEmpty
@@ -358,6 +362,7 @@ class _EditUserPostState extends State<EditUserPost> {
                         height: 10,
                       ),
                       TextFormField(
+                        textCapitalization: TextCapitalization.words,
                         maxLength: 40,
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
@@ -373,7 +378,7 @@ class _EditUserPostState extends State<EditUserPost> {
                               borderRadius: BorderRadius.circular(15)),
                         ),
                         onChanged: (value) {
-                          ScholarName = value;
+                          ScholarName = value.trim();
                         },
                         validator: (value) {
                           return value!.isEmpty ? 'Enter Title' : null;
@@ -383,6 +388,7 @@ class _EditUserPostState extends State<EditUserPost> {
                         height: 10,
                       ),
                       TextFormField(
+                        textCapitalization: TextCapitalization.words,
                         maxLines: null,
                         cursorColor: Colors.blue,
                         style: TextStyle(
@@ -399,7 +405,7 @@ class _EditUserPostState extends State<EditUserPost> {
                               borderRadius: BorderRadius.circular(15)),
                         ),
                         onChanged: (value) {
-                          FullDescription = value;
+                          FullDescription = value.trim();
                         },
                         validator: (value) {
                           return value!.isEmpty ? 'Enter Description' : null;
@@ -409,20 +415,21 @@ class _EditUserPostState extends State<EditUserPost> {
                         height: 10,
                       ),
                       TextFormField(
+                        textCapitalization: TextCapitalization.words,
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 18),
                         controller: SpecialNotesController,
                         keyboardType: TextInputType.text,
                         decoration: InputDecoration(
-                          hintText: "NO Notes (Write NO)",
+                          hintText: "Special Notes",
                           labelText: "Special Notes",
                           border: OutlineInputBorder(
                               borderSide: BorderSide(color: Colors.white),
                               borderRadius: BorderRadius.circular(15)),
                         ),
                         onChanged: (value) {
-                          SpecialNotes = value;
+                          SpecialNotes = value.trim();
                         },
                         validator: (value) {
                           return value!.isEmpty ? 'Enter Special Notes' : null;
@@ -454,9 +461,12 @@ class _EditUserPostState extends State<EditUserPost> {
                                     context: context,
                                     barrierDismissible: false,
                                     builder: (context) {
-                                      return Container(
-                                        child: Center(
-                                          child: CircularProgressIndicator(),
+                                      return WillPopScope(
+                                        onWillPop: () async => false,
+                                        child: Container(
+                                          child: Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
                                         ),
                                       );
                                     });
@@ -468,7 +478,10 @@ class _EditUserPostState extends State<EditUserPost> {
                                         hexColors("006064")));
                               }
                             }
-                          })
+                          }),
+                      SizedBox(
+                        height: 50,
+                      ),
                     ],
                   ))
             ],
@@ -609,7 +622,20 @@ class _EditUserPostState extends State<EditUserPost> {
     print(getUserId);
     print(getUserName);
 
-    var url = Uri.parse("https://aeliya.000webhostapp.com/updatePost.php");
+    //for compress image
+    var imageMB;
+
+    if(_image!.lengthSync()/1024 > 600){
+      File compressedFile = await FlutterNativeImage.compressImage(_image!.path,
+          quality: 100, percentage: 20);
+      imageMB = compressedFile;
+      print("compressed image size ${compressedFile.lengthSync()/1024}");
+    }else{
+      imageMB = _image;
+      print("server image ${imageMB!.lengthSync()/1024}");
+    }
+
+    var url = Uri.parse("${masterUrl}updatePost.php");
 
     if(_image == null){
 
@@ -617,14 +643,14 @@ class _EditUserPostState extends State<EditUserPost> {
       Map mapeddate = {
         'ref_id': e_refid,
         'postId': getUserId.toString(),
-        'azakhana_name': AzakhanaName!,
-        'city_name':CityName!,
-        'description':FullDescription!,
+        'azakhana_name': AzakhanaName!.removemoji,
+        'city_name':CityName!.removemoji,
+        'description':FullDescription!.removemoji,
         'end_date': EndDate!,
-        'name_of_schollar': ScholarName!,
+        'name_of_schollar': ScholarName!.removemoji,
         'postDateTime': _DateTimeNow,
         'program_list': _MajlisMehfil!,
-        'special_notes': SpecialNotes!,
+        'special_notes': SpecialNotes!.removemoji,
         'start_date': StartDate!,
         'time': MajlisTime!,
         'user_name': getUserName.toString(),
@@ -641,6 +667,8 @@ class _EditUserPostState extends State<EditUserPost> {
         Fluttertoast.showToast(msg: "Your post is Updated",
             backgroundColor: Color(
                 hexColors("006064")));
+       /* sendNotification("Updated ${_MajlisMehfil}: ${ScholarName}",
+            "${AzakhanaName} ${StartDate} to ${EndDate} ${MajlisTime}");*/
         Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminPannel()));
       } else {
         print("failed");
@@ -652,9 +680,9 @@ class _EditUserPostState extends State<EditUserPost> {
 
     }else{
 
-      var stream = http.ByteStream(_image!.openRead());
+      var stream = http.ByteStream(imageMB!.openRead());
       stream.cast();
-      var length = await _image!.length();
+      var length = await imageMB!.length();
       var request = http.MultipartRequest('POST', url);
 
       request.fields['ref_id'] = e_refid;
@@ -675,7 +703,7 @@ class _EditUserPostState extends State<EditUserPost> {
         'image',
         stream,
         length,
-        filename: _image!.path.toString(),
+        filename: imageMB!.path.toString(),
       );
       request.files.add(_multipart);
 
@@ -687,8 +715,8 @@ class _EditUserPostState extends State<EditUserPost> {
         print(response.stream.transform(utf8.decoder).listen((event) {
           print(event);
         }));
-        sendNotification("(Update Schedule) ${_MajlisMehfil}: ${ScholarName}",
-            "${AzakhanaName} ${StartDate} to ${EndDate} ${MajlisTime}");
+       /* sendNotification("(Update Schedule) ${_MajlisMehfil}: ${ScholarName}",
+            "${AzakhanaName} ${StartDate} to ${EndDate} ${MajlisTime}");*/
         Fluttertoast.showToast(msg: "Your post is published",
             backgroundColor: Color(
                 hexColors("006064")));
@@ -708,7 +736,7 @@ class _EditUserPostState extends State<EditUserPost> {
         Uri.parse("https://fcm.googleapis.com/fcm/send"),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+          'Authorization': "key=AAAAmvSnvys:APA91bFTY1y3nwky9ilhsMcR0EtIZriEK9B6NEX3QkPpTQ2EG_WMYcUzQTbgUnbZ2bq5wR4gomWm0X0Qio-d8eRj2YV6ybPbRqvWfSbAEqVnShdW6dN7qnZSwhRwauW14SxLYBwrb5K9"
         },
         body: jsonEncode(
           <String, dynamic>{

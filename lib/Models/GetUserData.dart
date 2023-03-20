@@ -1,51 +1,21 @@
-/// name : "Taki Rajani"
-/// email : "mohammadtaki.rajani@gmail.com"
-/// isAdmin : "no"
-/// description : "test "
-
 class GetUserData {
-  GetUserData({
-      String? name,
-      String? email,
-      String? isAdmin,
-      String? description,}){
-    _name = name;
-    _email = email;
-    _isAdmin = isAdmin;
-    _description = description;
-}
+  String? name;
+  String? email;
+  String? isAdmin;
 
-  GetUserData.fromJson(dynamic json) {
-    _name = json["name"];
-    _email = json["email"];
-    _isAdmin = json["isAdmin"];
-    _description = json["description"];
+  GetUserData({this.name, this.email, this.isAdmin});
+
+  GetUserData.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+    email = json['email'];
+    isAdmin = json['isAdmin'];
   }
-  String? _name;
-  String? _email;
-  String? _isAdmin;
-  String? _description;
-GetUserData copyWith({  String? name,
-  String? email,
-  String? isAdmin,
-  String? description,
-}) => GetUserData(  name: name ?? _name,
-  email: email ?? _email,
-  isAdmin: isAdmin ?? _isAdmin,
-  description: description ?? _description,
-);
-  String? get name => _name;
-  String? get email => _email;
-  String? get isAdmin => _isAdmin;
-  String? get description => _description;
 
   Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map['name'] = _name;
-    map['email'] = _email;
-    map['isAdmin'] = _isAdmin;
-    map['description'] = _description;
-    return map;
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['name'] = this.name;
+    data['email'] = this.email;
+    data['isAdmin'] = this.isAdmin;
+    return data;
   }
-
 }

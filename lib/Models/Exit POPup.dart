@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 //Method for exit app on back press
 var globalLinks = "https://aeliya.000webhostapp.com/";
@@ -22,7 +23,8 @@ Future<bool> showExitPopup(context) async {
                       child: ElevatedButton(
                         onPressed: () {
                           print('yes selected');
-                          exit(0);
+                          //exit(0);
+                          SystemNavigator.pop();
                         },
                         child: Text("Yes"),
                         style: ElevatedButton.styleFrom(
@@ -39,7 +41,7 @@ Future<bool> showExitPopup(context) async {
                           child:
                           Text("No", style: TextStyle(color: Colors.black)),
                           style: ElevatedButton.styleFrom(
-                            primary: Colors.white,
+                            backgroundColor: Colors.white,
                           ),
                         ))
                   ],

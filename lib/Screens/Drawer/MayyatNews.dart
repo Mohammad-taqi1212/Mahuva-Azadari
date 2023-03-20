@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:mahuva_azadari/Models/AllMayyatNewsModel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -38,15 +39,23 @@ class _MayyatNewsState extends State<MayyatNews> {
 
   Future<AllMayyatNewsModel> getMayyatNews() async {
     var url =
-        "https://aeliya.000webhostapp.com/getMayyatNews.php?page=$currentPage";
-    var response = await http.get(Uri.parse(url));
+        //"https://aeliya.000webhostapp.com/getMayyatNews.php?page=$currentPage";
+        "${masterUrl}getMayyatNews.php?page=$currentPage";
+    var response = await http.get(Uri.parse(url)).timeout(
+        Duration(seconds: 20),
+        onTimeout: (){
+          Fluttertoast.showToast(msg: "Server time out",
+              backgroundColor: Color(
+                  hexColors("006064")));
+          return http.Response('Error', 408);
+        }
+    );
     var jsondata = jsonDecode(response.body.toString());
     var _apiData = AllMayyatNewsModel.fromJson(jsondata);
 
     var newData = [...?dummyData.data, ...?_apiData.data];
 
     if (response.statusCode == 200) {
-
       if(isRefersh == true){
         setState((){
           isRefersh = false;
@@ -76,6 +85,7 @@ class _MayyatNewsState extends State<MayyatNews> {
   Widget build(BuildContext context) {
     return SafeArea(
         child: Scaffold(
+          backgroundColor: Colors.white,
             appBar: AppBar(
       backgroundColor: Color(hexColors('006064')),
       title: Text(
@@ -141,16 +151,268 @@ class _MayyatNewsState extends State<MayyatNews> {
 
                                   if (searchController.text.isEmpty) {
                                     return Padding(
-                                      padding: EdgeInsets.only(left: 5, right: 5),
-                                      child: Card(
-                                        color: Color(hexColors("009688")),
+                                      padding: EdgeInsets.only(left: 5, right: 5, top: 10),
+                                      child: Material(
                                         elevation: 6,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(10.0)),
-                                        child: Column(
-                                          children: [
-                                            ListTile(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          //color: Color(hexColors("009688")),
+                                          // elevation: 6,
+                                          // shape: RoundedRectangleBorder(
+                                          //     borderRadius:
+                                          //     BorderRadius.circular(10.0)),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: Colors.black),
+                                            gradient: LinearGradient(
+                                                colors: [
+                                                  Color(hexColors("009688")),
+                                                  //Colors.blueAccent,
+                                                  Color(hexColors("4DB6AC")),
+                                                ],
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              ListTile(
+                                                  leading: FullScreenWidget(
+                                                      child: Container(
+                                                        height: 50,
+                                                        width: 50,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.rectangle,
+                                                          border: Border.all(color: Colors.black),
+                                                          color: Color(hexColors("84FFFF")),
+                                                        ),
+                                                        child: chekImage(postList.imagePath.toString()),
+                                                      )),
+                                                  title: Column(
+                                                    children: [
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "M.Name: ",
+                                                            Hdetail: postList
+                                                                .name
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "City: ",
+                                                            Hdetail: postList
+                                                                .city
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "Date: ",
+                                                            Hdetail: postList.date
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "Mayyt Time: ",
+                                                            Hdetail: postList.mayyatTime
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "Namaze Mayyat: ",
+                                                            Hdetail: postList
+                                                                .namazTime
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ]
+                                                  ),),
+                                              ExpansionTile(
+                                                collapsedIconColor: Colors.white,
+                                                title: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    //for share post to other app
+                                                    Padding(
+                                                      padding:
+                                                      const EdgeInsets.all(
+                                                          5.0),
+                                                      child: IconButton(
+                                                        icon: Icon(Icons.share,color: Colors.white,),
+                                                        onPressed: () async{
+
+                                                          if (postList.imagePath == ""){
+                                                            await Share.share(subject:
+                                                            "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
+                                                                "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
+                                                                    "\n \n 🔊 Azadari Schedule App  \n"
+                                                                    "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
+                                                                    "🔊 ${postList.city} \n \n \n"
+                                                                    "▪️Marhum:- ${postList.name} \n"
+                                                                    "▪️City:- ${postList.city} \n"
+                                                                    "▪️Date:- ${postList.date} \n"
+                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
+                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
+                                                                    "▪️Address:- ${postList.address} \n \n \n"
+                                                            );
+
+                                                          }else{
+                                                            final urlImage = "${masterUrl}${postList.imagePath}";
+                                                            final url = Uri.parse(urlImage);
+                                                            final response = await http.get(url);
+                                                            final bytes = response.bodyBytes;
+
+                                                            //for temporary store image in device
+                                                            final temp = await getTemporaryDirectory();
+                                                            final path = '${temp.path}/image.jpg';
+                                                            File(path).writeAsBytesSync(bytes);
+
+                                                            await Share.shareXFiles([XFile(path)],
+                                                                subject: "Azadari Schedule app",
+                                                                text:
+
+                                                                "⬛ Azadari Schedule App ⬛ \n"
+                                                                    "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
+                                                                    "🔊 ${postList.city} \n \n \n"
+                                                                    "▪️Marhum:- ${postList.name} \n"
+                                                                    "▪️City:- ${postList.city} \n"
+                                                                    "▪️Date:- ${postList.date} \n"
+                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
+                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
+                                                                    "▪️Address:- ${postList.address} \n \n \n"
+                                                                    "✅ For daily majlis update please download our app from play store"
+                                                            );
+                                                          }
+                                                        },
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      "Address:",
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 20,
+                                                          fontWeight:
+                                                          FontWeight.w700,
+                                                          fontStyle:
+                                                          FontStyle.italic,
+                                                          decoration: TextDecoration
+                                                              .underline),
+                                                    ),
+                                                  ],
+                                                ),
+                                                iconColor: Colors.white,
+                                                children: [
+                                                  Container(
+                                                    width: double.infinity,
+                                                    margin: EdgeInsets.all(5.0),
+                                                    padding: EdgeInsets.all(5.0),
+                                                    decoration: BoxDecoration(
+                                                        borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                        border: Border.all(
+                                                            color: Colors.white)),
+                                                    child: Text(postList.address.toString(),
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontStyle:
+                                                          FontStyle.italic,
+                                                          fontSize: 18),
+                                                    ),
+                                                  ),
+
+
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Expanded(
+                                                        child: Padding(
+                                                          padding:
+                                                          const EdgeInsets.all(
+                                                              5.0),
+                                                          child: Text(
+                                                            postList.username
+                                                                .toString(),
+                                                            style: TextStyle(
+                                                                color: Colors.white),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                        const EdgeInsets.all(
+                                                            5.0),
+                                                        child: Text(
+                                                            postList.postTime
+                                                                .toString(),
+                                                            style: TextStyle(
+                                                                color:
+                                                                Colors.white)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                      ),
+                                  );
+
+                                  } else if (tempSearch.toLowerCase().contains(
+                                      searchController.text.toString())) {
+                                    return Padding(
+                                      padding: EdgeInsets.only(left: 5, right: 5, top: 10),
+                                      child: Material(
+                                        elevation: 6,
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          //color: Color(hexColors("009688")),
+                                          // elevation: 6,
+                                          // shape: RoundedRectangleBorder(
+                                          //     borderRadius:
+                                          //     BorderRadius.circular(10.0)),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: Colors.black),
+                                            gradient: LinearGradient(
+                                                colors: [
+                                                  Color(hexColors("009688")),
+                                                  //Colors.blueAccent,
+                                                  Color(hexColors("4DB6AC")),
+                                                ],
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              ListTile(
                                                 leading: FullScreenWidget(
                                                     child: Container(
                                                       height: 50,
@@ -163,434 +425,196 @@ class _MayyatNewsState extends State<MayyatNews> {
                                                       child: chekImage(postList.imagePath.toString()),
                                                     )),
                                                 title: Column(
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "M.Name: ",
-                                                          Hdetail: postList
-                                                              .name
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "City: ",
-                                                          Hdetail: postList
-                                                              .city
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "Date: ",
-                                                          Hdetail: postList.date
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "Mayyt Time: ",
-                                                          Hdetail: postList.mayyatTime
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "Namaze Mayyat: ",
-                                                          Hdetail: postList
-                                                              .namazTime
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ]
+                                                    children: [
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "M.Name: ",
+                                                            Hdetail: postList
+                                                                .name
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "City: ",
+                                                            Hdetail: postList
+                                                                .city
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "Date: ",
+                                                            Hdetail: postList.date
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "Mayyt Time: ",
+                                                            Hdetail: postList.mayyatTime
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                        children: [
+                                                          titleStyle(
+                                                            Htitle: "Namaze Mayyat: ",
+                                                            Hdetail: postList
+                                                                .namazTime
+                                                                .toString(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ]
                                                 ),),
-                                            ExpansionTile(
-                                              title: Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                children: const [
-                                                  Text(
-                                                    "Address:",
-                                                    style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 20,
-                                                        fontWeight:
-                                                        FontWeight.w700,
-                                                        fontStyle:
-                                                        FontStyle.italic,
-                                                        decoration: TextDecoration
-                                                            .underline),
-                                                  ),
-                                                ],
-                                              ),
-                                              iconColor: Colors.white,
-                                              children: [
-                                                Container(
-                                                  width: double.infinity,
-                                                  margin: EdgeInsets.all(5.0),
-                                                  padding: EdgeInsets.all(5.0),
-                                                  decoration: BoxDecoration(
-                                                      borderRadius:
-                                                      BorderRadius.circular(
-                                                          10),
-                                                      border: Border.all(
-                                                          color: Colors.white)),
-                                                  child: Text(postList.address.toString(),
-                                                    style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontStyle:
-                                                        FontStyle.italic,
-                                                        fontSize: 18),
-                                                  ),
-                                                ),
-
-
-                                                Row(
-                                                  mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                                  children: [
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                        postList.username
-                                                            .toString(),
-                                                        style: TextStyle(
-                                                            color: Colors.white),
-                                                      ),
-                                                    ),
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                          postList.postTime
-                                                              .toString(),
-                                                          style: TextStyle(
-                                                              color:
-                                                              Colors.white)),
-                                                    ),
-
-                                                    //for share post to other app
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: IconButton(
-                                                        icon: Icon(Icons.share,color: Colors.white,),
-                                                        onPressed: () async{
-
-                                                          if (postList.imagePath == null){
-                                                            await Share.share(subject:
-                                                                 "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
-                                                                "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
-                                                                    "\n \n 🔊 Azadari Schedule App  \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-
-                                                          }else{
-                                                            final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
-                                                            final url = Uri.parse(urlImage);
-                                                            final response = await http.get(url);
-                                                            final bytes = response.bodyBytes;
-
-                                                            //for temporary store image in device
-                                                            final temp = await getTemporaryDirectory();
-                                                            final path = '${temp.path}/image.jpg';
-                                                            File(path).writeAsBytesSync(bytes);
-
-                                                            await Share.shareXFiles([XFile(path)],
-                                                                subject: "Azadari Schedule app",
-                                                                text:
-
-                                                                "⬛ Azadari Schedule App ⬛ \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-                                                          }
-                                                        },
-                                                      ),
+                                              ExpansionTile(
+                                                title: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: const [
+                                                    Text(
+                                                      "Address:",
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 20,
+                                                          fontWeight:
+                                                          FontWeight.w700,
+                                                          fontStyle:
+                                                          FontStyle.italic,
+                                                          decoration: TextDecoration
+                                                              .underline),
                                                     ),
                                                   ],
                                                 ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                  ),
-                                  );
-
-                                  } else if (tempSearch.toLowerCase().contains(
-                                      searchController.text.toString())) {
-                                    return Padding(
-                                      padding: EdgeInsets.only(left: 5, right: 5),
-                                      child: Card(
-                                        color: Color(hexColors("009688")),
-                                        elevation: 6,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(10.0)),
-                                        child: Column(
-                                          children: [
-                                            ListTile(
-                                              leading: FullScreenWidget(
-                                                  child: Container(
-                                                    height: 50,
-                                                    width: 50,
+                                                iconColor: Colors.white,
+                                                children: [
+                                                  Container(
+                                                    width: double.infinity,
+                                                    margin: EdgeInsets.all(5.0),
+                                                    padding: EdgeInsets.all(5.0),
                                                     decoration: BoxDecoration(
-                                                      shape: BoxShape.rectangle,
-                                                      border: Border.all(color: Colors.black),
-                                                      color: Color(hexColors("84FFFF")),
+                                                        borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                        border: Border.all(
+                                                            color: Colors.white)),
+                                                    child: Text(postList.address.toString(),
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontStyle:
+                                                          FontStyle.italic,
+                                                          fontSize: 18),
                                                     ),
-                                                    child: chekImage(postList.imagePath.toString()),
-                                                  )),
-                                              title: Column(
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "M.Name: ",
-                                                          Hdetail: postList
-                                                              .name
+                                                  ),
+
+
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Padding(
+                                                        padding:
+                                                        const EdgeInsets.all(
+                                                            5.0),
+                                                        child: Text(
+                                                          postList.username
                                                               .toString(),
+                                                          style: TextStyle(
+                                                              color: Colors.white),
                                                         ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "City: ",
-                                                          Hdetail: postList
-                                                              .city
-                                                              .toString(),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                        const EdgeInsets.all(
+                                                            5.0),
+                                                        child: Text(
+                                                            postList.postTime
+                                                                .toString(),
+                                                            style: TextStyle(
+                                                                color:
+                                                                Colors.white)),
+                                                      ),
+
+                                                      //for share post to other app
+                                                      Padding(
+                                                        padding:
+                                                        const EdgeInsets.all(
+                                                            5.0),
+                                                        child: IconButton(
+                                                          icon: Icon(Icons.share,color: Colors.white,),
+                                                          onPressed: () async{
+
+                                                            if (postList.imagePath == ""){
+                                                              await Share.share(subject:
+                                                              "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
+                                                                  "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
+                                                                      "\n \n 🔊 Azadari Schedule App  \n"
+                                                                      "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
+                                                                      "🔊 ${postList.city} \n \n \n"
+                                                                      "▪️Marhum:- ${postList.name} \n"
+                                                                      "▪️City:- ${postList.city} \n"
+                                                                      "▪️Date:- ${postList.date} \n"
+                                                                      "▪️Mayyat Time:- ${postList.mayyatTime}\n"
+                                                                      "▪️Namaze Mayyat:- ${postList.namazTime} \n"
+                                                                      "▪️Address:- ${postList.address} \n \n \n"
+
+                                                              );
+
+                                                            }else{
+                                                              final urlImage = "${masterUrl}${postList.imagePath}";
+                                                              final url = Uri.parse(urlImage);
+                                                              final response = await http.get(url);
+                                                              final bytes = response.bodyBytes;
+
+                                                              //for temporary store image in device
+                                                              final temp = await getTemporaryDirectory();
+                                                              final path = '${temp.path}/image.jpg';
+                                                              File(path).writeAsBytesSync(bytes);
+
+                                                              await Share.shareXFiles([XFile(path)],
+                                                                  subject: "Azadari Schedule app",
+                                                                  text:
+
+                                                                  "⬛ Azadari Schedule App ⬛ \n"
+                                                                      "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
+                                                                      "🔊 ${postList.city} \n \n \n"
+                                                                      "▪️Marhum:- ${postList.name} \n"
+                                                                      "▪️City:- ${postList.city} \n"
+                                                                      "▪️Date:- ${postList.date} \n"
+                                                                      "▪️Mayyat Time:- ${postList.mayyatTime}\n"
+                                                                      "▪️Namaze Mayyat:- ${postList.namazTime} \n"
+                                                                      "▪️Address:- ${postList.address} \n \n \n"
+                                                                      "✅ For daily majlis update please download our app from play store"
+                                                              );
+                                                            }
+                                                          },
                                                         ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "Date: ",
-                                                          Hdetail: postList.date
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "Mayyt Time: ",
-                                                          Hdetail: postList.mayyatTime
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                      children: [
-                                                        titleStyle(
-                                                          Htitle: "Namaze Mayyat: ",
-                                                          Hdetail: postList
-                                                              .namazTime
-                                                              .toString(),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ]
-                                              ),),
-                                            ExpansionTile(
-                                              title: Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                children: const [
-                                                  Text(
-                                                    "Address:",
-                                                    style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 20,
-                                                        fontWeight:
-                                                        FontWeight.w700,
-                                                        fontStyle:
-                                                        FontStyle.italic,
-                                                        decoration: TextDecoration
-                                                            .underline),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ],
                                               ),
-                                              iconColor: Colors.white,
-                                              children: [
-                                                Container(
-                                                  width: double.infinity,
-                                                  margin: EdgeInsets.all(5.0),
-                                                  padding: EdgeInsets.all(5.0),
-                                                  decoration: BoxDecoration(
-                                                      borderRadius:
-                                                      BorderRadius.circular(
-                                                          10),
-                                                      border: Border.all(
-                                                          color: Colors.white)),
-                                                  child: Text(postList.address.toString(),
-                                                    style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontStyle:
-                                                        FontStyle.italic,
-                                                        fontSize: 18),
-                                                  ),
-                                                ),
-
-
-                                                Row(
-                                                  mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                                  children: [
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                        postList.username
-                                                            .toString(),
-                                                        style: TextStyle(
-                                                            color: Colors.white),
-                                                      ),
-                                                    ),
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                          postList.postTime
-                                                              .toString(),
-                                                          style: TextStyle(
-                                                              color:
-                                                              Colors.white)),
-                                                    ),
-
-                                                    //for share post to other app
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: IconButton(
-                                                        icon: Icon(Icons.share,color: Colors.white,),
-                                                        onPressed: () async{
-
-                                                          //for image
-                                                          if (postList.imagePath == null){
-                                                            await Share.share(subject:
-                                                            "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
-                                                                "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
-                                                                    "\n \n 🔊 Azadari Schedule App  \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-
-                                                          }else{
-                                                            final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
-                                                            final url = Uri.parse(urlImage);
-                                                            final response = await http.get(url);
-                                                            final bytes = response.bodyBytes;
-
-                                                            //for temporary store image in device
-                                                            final temp = await getTemporaryDirectory();
-                                                            final path = '${temp.path}/image.jpg';
-                                                            File(path).writeAsBytesSync(bytes);
-
-                                                            await Share.shareXFiles([XFile(path)],
-                                                                subject: "Azadari Schedule app",
-                                                                text:
-
-                                                                "⬛ Azadari Schedule App ⬛ \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-                                                          }
-                                                          // final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
-                                                          // final url = Uri.parse(urlImage);
-                                                          // final response = await http.get(url);
-                                                          // final bytes = response.bodyBytes;
-
-                                                          // //for temporary store image in device
-                                                          // final temp = await getTemporaryDirectory();
-                                                          // final path = '${temp.path}/image.jpg';
-                                                          // File(path).writeAsBytesSync(bytes);
-
-                                                          // await Share.shareXFiles([XFile(path)],
-                                                          //     subject: "Azadari Schedule app",
-                                                          //     text:
-                                                          //
-                                                          //     "⬛ Azadari Schedule App ⬛ \n"
-                                                          //         "🔊 ${postList.city} \n \n \n"
-                                                          //         "▪️Marhum:- ${postList.name} \n"
-                                                          //         "▪️City:- ${postList.city} \n"
-                                                          //         "▪️Date:- ${postList.date} \n"
-                                                          //         "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                          //         "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                          //         "▪️Address:- ${postList.address} \n \n \n"
-                                                          //         "✅ For daily majlis update please download our app from play store"
-                                                          // );
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     );
@@ -625,7 +649,7 @@ class _MayyatNewsState extends State<MayyatNews> {
                           );
                         }else if(snapshot.connectionState == ConnectionState.waiting){
                           return Center(
-                            child: CircularProgressIndicator(),
+                              child: Image.asset('assets/Ovals.gif'),
                           );
                         }else if (snapshot.hasError) {
                           return Center(
@@ -669,15 +693,16 @@ class _MayyatNewsState extends State<MayyatNews> {
   }
 
   chekImage(String imagepath) {
-    if(imagepath == ""){
+    if (imagepath == "") {
       print("null");
+      print(imagepath);
       return
-      Image.asset('assets/appIcon.png');
-    }else{
+        Image.asset('assets/appIcon.png');
+    } else {
       print("not null");
+      print(imagepath);
       return
-      Image.network("https://aeliya.000webhostapp.com/"+imagepath);
+        Image.network("${masterUrl}" + imagepath);
     }
-
   }
 }

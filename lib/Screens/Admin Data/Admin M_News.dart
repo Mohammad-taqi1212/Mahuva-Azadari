@@ -49,7 +49,8 @@ class _AdminMnewsState extends State<AdminMnews> {
     var getUserId = sharedPreferences.getString('currentUserid');
 
     var url =
-        "https://aeliya.000webhostapp.com/adminMayyatNews.php?id=$getUserId&pageNo=$currentPage";
+        //"https://aeliya.000webhostapp.com/adminMayyatNews.php?id=$getUserId&pageNo=$currentPage";
+        "${masterUrl}adminMayyatNews.php?id=$getUserId&pageNo=$currentPage";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
     var _apiData = AdminMayyatModel.fromJson(jsondata);
@@ -91,6 +92,7 @@ class _AdminMnewsState extends State<AdminMnews> {
   Widget build(BuildContext context) {
     return SafeArea(
         child: Scaffold(
+          backgroundColor: Colors.white,
           body: Padding(
             padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
             child: Column(
@@ -285,11 +287,12 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                             icon: Icon(Icons.share,color: Colors.white,),
                                                             onPressed: () async{
 
-                                                              if (postList.imagePath == null){
+                                                              if (postList.imagePath == ""){
                                                                 await Share.share(subject:
                                                                 "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
                                                                     "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
                                                                         "\n \n 🔊 Azadari Schedule App  \n"
+                                                                        "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
                                                                         "🔊 ${postList.city} \n \n \n"
                                                                         "▪️Marhum:- ${postList.name} \n"
                                                                         "▪️City:- ${postList.city} \n"
@@ -297,11 +300,10 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                                         "▪️Mayyat Time:- ${postList.mayyatTime}\n"
                                                                         "▪️Namaze Mayyat:- ${postList.namazTime} \n"
                                                                         "▪️Address:- ${postList.address} \n \n \n"
-                                                                        "✅ For daily majlis update please download our app from play store"
                                                                 );
 
                                                               }else{
-                                                                final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
+                                                                final urlImage = "${masterUrl}${postList.imagePath}";
                                                                 final url = Uri.parse(urlImage);
                                                                 final response = await http.get(url);
                                                                 final bytes = response.bodyBytes;
@@ -316,6 +318,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                                     text:
 
                                                                     "⬛ Azadari Schedule App ⬛ \n"
+                                                                        "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
                                                                         "🔊 ${postList.city} \n \n \n"
                                                                         "▪️Marhum:- ${postList.name} \n"
                                                                         "▪️City:- ${postList.city} \n"
@@ -373,35 +376,35 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                 ),
 
 
-                                                Row(
-                                                  mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                                  children: [
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                        postList.username
-                                                            .toString(),
-                                                        style: TextStyle(
-                                                            color: Colors.white),
-                                                      ),
-                                                    ),
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                          postList.postTime
-                                                              .toString(),
-                                                          style: TextStyle(
-                                                              color:
-                                                              Colors.white)),
-                                                    ),
-                                                  ],
-                                                ),
+                                                // Row(
+                                                //   mainAxisAlignment:
+                                                //   MainAxisAlignment
+                                                //       .spaceBetween,
+                                                //   children: [
+                                                //     Padding(
+                                                //       padding:
+                                                //       const EdgeInsets.all(
+                                                //           5.0),
+                                                //       child: Text(
+                                                //         postList.username
+                                                //             .toString(),
+                                                //         style: TextStyle(
+                                                //             color: Colors.white),
+                                                //       ),
+                                                //     ),
+                                                //     Padding(
+                                                //       padding:
+                                                //       const EdgeInsets.all(
+                                                //           5.0),
+                                                //       child: Text(
+                                                //           postList.postTime
+                                                //               .toString(),
+                                                //           style: TextStyle(
+                                                //               color:
+                                                //               Colors.white)),
+                                                //     ),
+                                                //   ],
+                                                // ),
                                               ],
                                             ),
                                           ],
@@ -558,6 +561,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                                 "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
                                                                     "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
                                                                         "\n \n 🔊 Azadari Schedule App  \n"
+                                                                        "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
                                                                         "🔊 ${postList.city} \n \n \n"
                                                                         "▪️Marhum:- ${postList.name} \n"
                                                                         "▪️City:- ${postList.city} \n"
@@ -569,7 +573,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                                 );
 
                                                               }else{
-                                                                final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
+                                                                final urlImage = "${masterUrl}${postList.imagePath}";
                                                                 final url = Uri.parse(urlImage);
                                                                 final response = await http.get(url);
                                                                 final bytes = response.bodyBytes;
@@ -584,6 +588,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                                     text:
 
                                                                     "⬛ Azadari Schedule App ⬛ \n"
+                                                                        "Download link https://play.google.com/store/apps/details?id=com.aleyia_azadari_schedule \n"
                                                                         "🔊 ${postList.city} \n \n \n"
                                                                         "▪️Marhum:- ${postList.name} \n"
                                                                         "▪️City:- ${postList.city} \n"
@@ -640,92 +645,6 @@ class _AdminMnewsState extends State<AdminMnews> {
                                                   ),
                                                 ),
 
-
-                                                Row(
-                                                  mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                                  children: [
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                        postList.username
-                                                            .toString(),
-                                                        style: TextStyle(
-                                                            color: Colors.white),
-                                                      ),
-                                                    ),
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: Text(
-                                                          postList.postTime
-                                                              .toString(),
-                                                          style: TextStyle(
-                                                              color:
-                                                              Colors.white)),
-                                                    ),
-
-                                                    //for share post to other app
-                                                    Padding(
-                                                      padding:
-                                                      const EdgeInsets.all(
-                                                          5.0),
-                                                      child: IconButton(
-                                                        icon: Icon(Icons.share,color: Colors.white,),
-                                                        onPressed: () async{
-
-                                                          //for image
-                                                          if (postList.imagePath == null){
-                                                            await Share.share(subject:
-                                                            "إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون",
-                                                                "⬛ إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُون ⬛"
-                                                                    "\n \n 🔊 Azadari Schedule App  \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-
-                                                          }else{
-                                                            final urlImage = "http://aeliya.000webhostapp.com/${postList.imagePath}";
-                                                            final url = Uri.parse(urlImage);
-                                                            final response = await http.get(url);
-                                                            final bytes = response.bodyBytes;
-
-                                                            //for temporary store image in device
-                                                            final temp = await getTemporaryDirectory();
-                                                            final path = '${temp.path}/image.jpg';
-                                                            File(path).writeAsBytesSync(bytes);
-
-                                                            await Share.shareXFiles([XFile(path)],
-                                                                subject: "Azadari Schedule app",
-                                                                text:
-
-                                                                "⬛ Azadari Schedule App ⬛ \n"
-                                                                    "🔊 ${postList.city} \n \n \n"
-                                                                    "▪️Marhum:- ${postList.name} \n"
-                                                                    "▪️City:- ${postList.city} \n"
-                                                                    "▪️Date:- ${postList.date} \n"
-                                                                    "▪️Mayyat Time:- ${postList.mayyatTime}\n"
-                                                                    "▪️Namaze Mayyat:- ${postList.namazTime} \n"
-                                                                    "▪️Address:- ${postList.address} \n \n \n"
-                                                                    "✅ For daily majlis update please download our app from play store"
-                                                            );
-                                                          }
-
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
                                               ],
                                             ),
                                           ],
@@ -763,7 +682,7 @@ class _AdminMnewsState extends State<AdminMnews> {
                           );
                         }else if(snapshot.connectionState == ConnectionState.waiting){
                           return Center(
-                            child: CircularProgressIndicator(),
+                            child: Image.asset('assets/Ovals.gif'),
                           );
                         }else if (snapshot.hasError) {
                           return Center(
@@ -807,18 +726,17 @@ class _AdminMnewsState extends State<AdminMnews> {
   }
 
   chekImage(String imagepath) {
-    if(imagepath.isEmpty){
+    if (imagepath == "") {
       print("null");
       print(imagepath);
       return
         Image.asset('assets/appIcon.png');
-    }else{
+    } else {
       print("not null");
       print(imagepath);
       return
-        Image.network("https://aeliya.000webhostapp.com/"+imagepath);
+        Image.network("${masterUrl}" + imagepath);
     }
-
   }
 
   Future<void> _showDeleteDialog(String? refId, String? imagePath) async {
@@ -865,7 +783,8 @@ class _AdminMnewsState extends State<AdminMnews> {
 
 
   Future<void> deletePost(String? refId, String? imagePath) async {
-    var url = "https://aeliya.000webhostapp.com/deleteMayyatNews.php?refId=$refId";
+    //var url = "https://aeliya.000webhostapp.com/deleteMayyatNews.php?refId=$refId"";
+    var url = "${masterUrl}deleteMayyatNews.php?refId=$refId";
     var response = await http.get(Uri.parse(url));
     var jsondata = jsonDecode(response.body.toString());
 
@@ -887,7 +806,7 @@ class _AdminMnewsState extends State<AdminMnews> {
 
   Future DeleteImage(String? refId, String? imagePath) async {
 
-    var url = Uri.parse("https://aeliya.000webhostapp.com/deleteMayyatNews.php?refId=$refId");
+    var url = Uri.parse("${masterUrl}deleteMayyatNews.php?refId=$refId");
 
     Map mapeddate = {
       'imgPath': imagePath

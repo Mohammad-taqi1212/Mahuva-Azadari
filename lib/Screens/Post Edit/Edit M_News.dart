@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mahuva_azadari/Screens/Admin%20Data/AddMayyatNews.dart';
+import 'package:remove_emoji/remove_emoji.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../Models/Hexa color.dart';
 import 'package:image_picker/image_picker.dart';
@@ -105,11 +106,22 @@ class _EditMnewsState extends State<EditMnews> {
                     dialog(context);
                   },
                   child: Center(
-                    child: Container(
-                      child: chekImage(widget.e_img),
+                    child: Center(
+                      child: Container(
+                        child: _image != null
+                            ? ClipRRect(
+                          child: Image.file(
+                            _image!.absolute,
+                            width: double.infinity,
+                            height: 250,
+                            //fit: BoxFit.fitHeight,
+                          ),
+                        )
+                            : chekImage(widget.e_img)
+                        ),
+                      ),
                     ),
                   ),
-                ),
                 SizedBox(
                   height: 10,
                 ),
@@ -118,6 +130,7 @@ class _EditMnewsState extends State<EditMnews> {
                     child: Column(
                       children: [
                         TextFormField(
+                          textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -131,7 +144,7 @@ class _EditMnewsState extends State<EditMnews> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            Mname = value;
+                            Mname = value.trim();
                           },
                           validator: (value) {
                             return value!.isEmpty ? 'Please Enter MarhumName' : null;
@@ -141,6 +154,7 @@ class _EditMnewsState extends State<EditMnews> {
                           height: 10,
                         ),
                         TextFormField(
+                          textCapitalization: TextCapitalization.words,
                           maxLength: 15,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
@@ -155,7 +169,7 @@ class _EditMnewsState extends State<EditMnews> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            city = value;
+                            city = value.trim();
                           },
                           validator: (value) {
                             return value!.isEmpty
@@ -167,6 +181,7 @@ class _EditMnewsState extends State<EditMnews> {
                           height: 10,
                         ),
                         TextFormField(
+                          textCapitalization: TextCapitalization.words,
                           maxLines: null,
                           cursorColor: Colors.blue,
                           style: TextStyle(
@@ -182,7 +197,7 @@ class _EditMnewsState extends State<EditMnews> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            address = value;
+                            address = value.trim();
                           },
                           validator: (value) {
                             return value!.isEmpty ? 'Enter Description' : null;
@@ -301,9 +316,12 @@ class _EditMnewsState extends State<EditMnews> {
                                       context: context,
                                       barrierDismissible: false,
                                       builder: (context) {
-                                        return Container(
-                                          child: Center(
-                                            child: CircularProgressIndicator(),
+                                        return WillPopScope(
+                                          onWillPop: () async => false,
+                                          child: Container(
+                                            child: Center(
+                                              child: CircularProgressIndicator(),
+                                            ),
                                           ),
                                         );
                                       });
@@ -451,17 +469,17 @@ class _EditMnewsState extends State<EditMnews> {
 
     if(_image == null){
 
-      var url = Uri.parse("http://aeliya.000webhostapp.com/updateMayyatNews.php");
+      var url = Uri.parse("${masterUrl}updateMayyatNews.php");
 
       Map mapeddate = {
         'ref_id':e_refid,
         'id': getUserId,
-        'name': Mname,
-        'city':city,
+        'name': Mname!.removemoji,
+        'city':city!.removemoji,
         'date':_date,
         'mayyatTime': _Mtime,
         'namazTime': _Ntime,
-        'Address': address,
+        'Address': address!.removemoji,
         'postTime': _DateTimeNow,
         'username': getUserName.toString(),
       };
@@ -475,8 +493,8 @@ class _EditMnewsState extends State<EditMnews> {
         Fluttertoast.showToast(msg: "Your post is Updated",
             backgroundColor: Color(
                 hexColors("006064")));
-        sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ (Update Mayyat News)${Mname}",
-            "City : ${city}, Mayyat Time : ${_Mtime}");
+        /*sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ (Update Mayyat News)${Mname}",
+            "City : ${city}, Mayyat Time : ${_Mtime}");*/
         Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPannel()));
         var data = jsonDecode(response.body);
         print("Data:- $data");
@@ -494,18 +512,18 @@ class _EditMnewsState extends State<EditMnews> {
       var stream = http.ByteStream(_image!.openRead());
       stream.cast();
       var length = await _image!.length();
-      var url = Uri.parse("http://aeliya.000webhostapp.com/updateMayyatNews.php");
+      var url = Uri.parse("${masterUrl}updateMayyatNews.php");
       var request = http.MultipartRequest('POST', url);
 
 
       request.fields['ref_id'] = e_refid;
       request.fields['id'] = getUserId.toString();
-      request.fields['name'] = Mname!;
-      request.fields['city'] = city!;
+      request.fields['name'] = Mname!.removemoji;
+      request.fields['city'] = city!.removemoji;
       request.fields['date'] = _date;
       request.fields['mayyatTime'] = _Mtime;
       request.fields['namazTime'] = _Ntime;
-      request.fields['Address'] = address!;
+      request.fields['Address'] = address!.removemoji;
       request.fields['postTime'] = _DateTimeNow;
       request.fields['username'] = getUserName.toString();
 
@@ -525,8 +543,8 @@ class _EditMnewsState extends State<EditMnews> {
         print(response.stream.transform(utf8.decoder).listen((event) {
           print(event);
         }));
-        sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
-            "City : ${city}, Mayyat Time : ${_Mtime}");
+        // sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
+        //     "City : ${city}, Mayyat Time : ${_Mtime}");
         Fluttertoast.showToast(msg: "Your post is Update",
             backgroundColor: Color(
                 hexColors("006064")));
@@ -547,7 +565,7 @@ class _EditMnewsState extends State<EditMnews> {
         Uri.parse("https://fcm.googleapis.com/fcm/send"),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+          'Authorization': "key=AAAAmvSnvys:APA91bFTY1y3nwky9ilhsMcR0EtIZriEK9B6NEX3QkPpTQ2EG_WMYcUzQTbgUnbZ2bq5wR4gomWm0X0Qio-d8eRj2YV6ybPbRqvWfSbAEqVnShdW6dN7qnZSwhRwauW14SxLYBwrb5K9"
         },
         body: jsonEncode(
           <String, dynamic>{
@@ -592,7 +610,11 @@ class _EditMnewsState extends State<EditMnews> {
     }else{
       print("not null");
       return
-        Image.network("https://aeliya.000webhostapp.com/"+imagepath);
+        Container(
+            width: double.infinity,
+            height: 150,
+            child: Image.network("${masterUrl}"+imagepath)
+        );
     }
 
   }

@@ -10,6 +10,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:io';
 import '../../Models/Round Button.dart';
 import 'package:http/http.dart' as http;
+import 'package:remove_emoji/remove_emoji.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 
 class AddMayyatNews extends StatefulWidget {
   const AddMayyatNews({Key? key}) : super(key: key);
@@ -101,8 +103,9 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                                 borderSide: BorderSide(color: Colors.white),
                                 borderRadius: BorderRadius.circular(15)),
                           ),
+                          textCapitalization: TextCapitalization.words,
                           onChanged: (value) {
-                            Mname = value;
+                            Mname = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty ? 'Please Enter MarhumName' : null;
@@ -113,6 +116,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                         ),
                         TextFormField(
                           maxLength: 15,
+                          textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -126,7 +130,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            city = value;
+                            city = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty
@@ -139,6 +143,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                         ),
                         TextFormField(
                           maxLines: null,
+                          textCapitalization: TextCapitalization.words,
                           cursorColor: Colors.blue,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
@@ -153,7 +158,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            address = value;
+                            address = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty ? 'Enter Description' : null;
@@ -278,9 +283,12 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
                                       context: context,
                                       barrierDismissible: false,
                                       builder: (context) {
-                                        return Container(
-                                          child: Center(
-                                            child: CircularProgressIndicator(),
+                                        return WillPopScope(
+                                          onWillPop: () async => false,
+                                          child: Container(
+                                            child: Center(
+                                              child: CircularProgressIndicator(),
+                                            ),
                                           ),
                                         );
                                       });
@@ -428,16 +436,17 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
 
     if(_image == null){
 
-        var url = Uri.parse("http://aeliya.000webhostapp.com/addMayyatNews.php");
+        //var url = Uri.parse("http://aeliya.000webhostapp.com/addMayyatNews.php");
+      var url = Uri.parse("${masterUrl}addMayyatNews.php");
 
         Map mapeddate = {
           'id': getUserId,
-          'name': Mname,
-          'city':city,
+          'name': Mname!.removemoji,
+          'city':city!.removemoji,
           'date':_date,
           'mayyatTime': _Mtime,
           'namazTime': _Ntime,
-          'Address': address,
+          'Address': address!.removemoji,
           'postTime': _DateTimeNow,
           'username': getUserName.toString(),
         };
@@ -447,8 +456,8 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
         if (response.statusCode == 200) {
           print("Success");
           Navigator.pop(context);
-          sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
-              "City : ${city}, Mayyat Time : ${_Mtime}");
+         /* sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
+              "City : ${city}, Mayyat Time : ${_Mtime}");*/
           Fluttertoast.showToast(msg: "Your post is published",
               backgroundColor: Color(
                   hexColors("006064")));
@@ -466,20 +475,33 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
     }
     else{
 
-      var stream = http.ByteStream(_image!.openRead());
+      //for compress image
+      var imageMB;
+
+      if(_image!.lengthSync()/1024 > 600){
+        File compressedFile = await FlutterNativeImage.compressImage(_image!.path,
+            quality: 100, percentage: 20);
+        imageMB = compressedFile;
+        print("compressed image size ${compressedFile.lengthSync()/1024}");
+      }else{
+        imageMB = _image;
+        print("server image ${imageMB!.lengthSync()/1024}");
+      }
+
+      var stream = http.ByteStream(imageMB!.openRead());
       stream.cast();
-      var length = await _image!.length();
-      var url = Uri.parse("http://aeliya.000webhostapp.com/addMayyatNews.php");
+      var length = await imageMB!.length();
+      var url = Uri.parse("${masterUrl}addMayyatNews.php");
       var request = http.MultipartRequest('POST', url);
 
 
       request.fields['id'] = getUserId.toString();
-      request.fields['name'] = Mname!;
-      request.fields['city'] = city!;
+      request.fields['name'] = Mname!.removemoji;
+      request.fields['city'] = city!.removemoji;
       request.fields['date'] = _date;
       request.fields['mayyatTime'] = _Mtime;
       request.fields['namazTime'] = _Ntime;
-      request.fields['Address'] = address!;
+      request.fields['Address'] = address!.removemoji;
       request.fields['postTime'] = _DateTimeNow;
       request.fields['username'] = getUserName.toString();
 
@@ -487,7 +509,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
         'image',
         stream,
         length,
-        filename: _image!.path.toString(),
+        filename: imageMB!.path.toString(),
       );
       request.files.add(_multipart);
 
@@ -499,8 +521,8 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
         print(response.stream.transform(utf8.decoder).listen((event) {
           print(event);
         }));
-        sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
-            "City : ${city}, Mayyat Time : ${_Mtime}");
+        /*sendNotification(" :إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ ${Mname}",
+            "City : ${city}, Mayyat Time : ${_Mtime}");*/
         Fluttertoast.showToast(msg: "Your post is published",
             backgroundColor: Color(
                 hexColors("006064")));
@@ -520,7 +542,7 @@ class _AddMayyatNewsState extends State<AddMayyatNews> {
         Uri.parse("https://fcm.googleapis.com/fcm/send"),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+          'Authorization': "key=AAAAmvSnvys:APA91bFTY1y3nwky9ilhsMcR0EtIZriEK9B6NEX3QkPpTQ2EG_WMYcUzQTbgUnbZ2bq5wR4gomWm0X0Qio-d8eRj2YV6ybPbRqvWfSbAEqVnShdW6dN7qnZSwhRwauW14SxLYBwrb5K9"
         },
         body: jsonEncode(
           <String, dynamic>{

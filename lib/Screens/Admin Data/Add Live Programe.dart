@@ -9,6 +9,8 @@ import '../../Models/Round Button.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 
+import 'AdminPannel.dart';
+
 class AddLiveProgram extends StatefulWidget {
   const AddLiveProgram({Key? key}) : super(key: key);
 
@@ -22,6 +24,7 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
   String? City;
   String? channelName;
   final _formkey = GlobalKey<FormState>();
+  String _date = "Date";
 
   TextEditingController YoutubeLinkController = TextEditingController();
   TextEditingController CityController = TextEditingController();
@@ -72,7 +75,7 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
                             ),
                             onChanged: (value) {
                               print("link  " + value);
-                              YoutubeLink = value;
+                              YoutubeLink = value.trim();
                             },
                             validator: (value) {
                               if (value!.trim().isEmpty || !RegExp(
@@ -86,6 +89,7 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
                           ),
                           SizedBox(height: 10,),
                           TextFormField(
+                            textCapitalization: TextCapitalization.words,
                             style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 //fontStyle: FontStyle.italic,
@@ -101,7 +105,7 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
                                   borderRadius: BorderRadius.circular(15)),
                             ),
                             onChanged: (value) {
-                              City = value;
+                              City = value.trim();;
                             },
                             validator: (value) {
                               return value!.trim().isEmpty
@@ -109,22 +113,62 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
                                   : null;
                             },
                           ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.all(15.0),
+                                padding: const EdgeInsets.all(3.0),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.black),
+                                  color: Color(hexColors('00BCD4')),
+                                ),
+                                height: 50,
+                                width: 120,
+                                child: Center(
+                                  child: InkWell(
+                                      onTap: () {
+                                        FocusManager.instance.primaryFocus?.unfocus();
+                                        pickDate(context);
+                                      },
+                                      child: Text(
+                                        _date,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 18),
+                                      )),
+                                ),
+                              ),
+                            ],
+                          ),
                           SizedBox(height: 20,),
                           RoundButton(title: "Upload Post",
                               onPress: () {
                                 FocusManager.instance.primaryFocus?.unfocus();
-                                if(_formkey.currentState!.validate()){
-                                  showDialog(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (context) {
-                                        return Container(
-                                          child: Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        );
-                                      });
-                                  AddLiveProgram();
+                                if(_date == "Date"){
+                                  Fluttertoast.showToast(msg: "Please select schedule date",
+                                      backgroundColor: Color(hexColors("006064")));
+                                }else{
+                                  if(_formkey.currentState!.validate()){
+                                    showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (context) {
+                                          return WillPopScope(
+                                            onWillPop: () async => false,
+                                            child: Container(
+                                              child: Center(
+                                                child: CircularProgressIndicator(),
+                                              ),
+                                            ),
+                                          );
+                                        });
+                                    AddLiveProgram();
+                                  }
                                 }
 
                               })
@@ -141,6 +185,25 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
     );
   }
 
+//Method for pickup the date
+  void pickDate(BuildContext context) async {
+    final initialDate = DateTime.now();
+    final newDate = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: DateTime.now(),
+        lastDate: DateTime(DateTime.now().year + 1)
+    );
+
+    if (newDate != null) {
+      String formattedDate =
+      DateFormat('dd-MM-yyyy').format(newDate);
+      setState(() {
+        _date = formattedDate;
+      });
+    }
+  }
+
 
   Future AddLiveProgram() async {
     final SharedPreferences sharedPreferences = await SharedPreferences
@@ -151,17 +214,27 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
 
 
 
-    var url = Uri.parse("https://aeliya.000webhostapp.com/addLinks.php");
+    //var url = Uri.parse("https://aeliya.000webhostapp.com/addLinks.php");
+    var url = Uri.parse("${masterUrl}addLinks.php");
 
     Map mapeddate = {
       'userid': getUserId,
       'username': getUserName,
       'link':YoutubeLink,
       'postDateTime':_DateTimeNow,
-      'city': City
+      'city': City,
+      'date': _date
     };
     print("JSON DATA : ${mapeddate}");
-    http.Response response = await http.post(url, body: mapeddate);
+    http.Response response = await http.post(url, body: mapeddate).timeout(
+        Duration(seconds: 10),
+        onTimeout: (){
+          Fluttertoast.showToast(msg: "Server time out",
+              backgroundColor: Color(
+                  hexColors("006064")));
+          return http.Response('Error', 408);
+        }
+    );
 
     if (response.statusCode == 200) {
       print("Success");
@@ -169,10 +242,14 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
       Navigator.pop(context);
       var data = jsonDecode(response.body);
       print("Data:- $data");
-      Navigator.pop(context);
 
-      sendNotification("Live Program Added",
-          "${getUserName} ${City}");
+      Fluttertoast.showToast(msg: "Live link is published",
+          backgroundColor: Color(hexColors("006064")));
+
+     /* sendNotification("Live Program Added",
+          "${_date} ${City}");*/
+
+      Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPannel()));
 
     } else {
       print("failed");
@@ -191,7 +268,7 @@ class _AddLiveProgramState extends State<AddLiveProgram> {
         Uri.parse("https://fcm.googleapis.com/fcm/send"),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+          'Authorization': "key=AAAAmvSnvys:APA91bFTY1y3nwky9ilhsMcR0EtIZriEK9B6NEX3QkPpTQ2EG_WMYcUzQTbgUnbZ2bq5wR4gomWm0X0Qio-d8eRj2YV6ybPbRqvWfSbAEqVnShdW6dN7qnZSwhRwauW14SxLYBwrb5K9"
         },
         body: jsonEncode(
           <String, dynamic>{

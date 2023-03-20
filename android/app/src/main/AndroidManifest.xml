@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.mahuva_azadari"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.aleyia_azadari_schedule"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://schemas.android.com/apk/res/android ">
 
@@ -7,6 +8,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
 
     <queries>
         <intent>
@@ -45,5 +49,8 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
     </application>
 </manifest>

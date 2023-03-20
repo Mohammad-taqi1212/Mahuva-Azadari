@@ -9,6 +9,8 @@ import '../../Models/Round Button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
+import 'package:remove_emoji/remove_emoji.dart';
 
 
 
@@ -29,10 +31,11 @@ class _AddPostState extends State<AddPost> {
   String? SpecialNotes;
   String? ScholarName;
   String? CityName;
-  List<String> programList = ['Majlis', 'Mehfil'];
-  String _MajlisMehfil = 'Majlis';
+  List<String> programList = ['Select event','Majlis', 'Mehfil','Event'];
+  String _MajlisMehfil = "Select event";
   String imageUrlFire = "";
   File? _image;
+
 
 
   final _formkey = GlobalKey<FormState>();
@@ -74,7 +77,7 @@ class _AddPostState extends State<AddPost> {
         body:
         SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
             child: Column(
               children: [
                 InkWell(
@@ -136,13 +139,13 @@ class _AddPostState extends State<AddPost> {
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
                             //fontStyle: FontStyle.italic,
-                            fontSize: 18,
+                            fontSize: 15,
                           ),
                           icon: Icon(
                             Icons.arrow_downward,
                             color: Colors.white,
                           ),
-                          dropdownColor: Color(hexColors('00BCD4')),
+                          dropdownColor: Color(hexColors('00796B')),
                           value: _MajlisMehfil,
                           isExpanded: true,
                           //alignment: Alignment.center,
@@ -224,10 +227,11 @@ class _AddPostState extends State<AddPost> {
                                   child: InkWell(
                                       onTap: () {
                                         FocusManager.instance.primaryFocus?.unfocus();
-                                        Fluttertoast.showToast(msg:
-                                        "Please select date range from start date",
-                                            backgroundColor: Color(
-                                                hexColors("006064")));
+                                        // Fluttertoast.showToast(msg:
+                                        // "Please select date range from start date",
+                                        //     backgroundColor: Color(
+                                        //         hexColors("006064")));
+                                        pickDate(context);
                                       },
                                       child: Text(
                                         EndDate,
@@ -275,6 +279,7 @@ class _AddPostState extends State<AddPost> {
                         ),
                         TextFormField(
                           maxLength: 15,
+                          textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               //fontStyle: FontStyle.italic,
@@ -292,7 +297,7 @@ class _AddPostState extends State<AddPost> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            CityName = value;
+                            CityName = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty ? 'Enter City' : null;
@@ -303,6 +308,7 @@ class _AddPostState extends State<AddPost> {
                         ),
                         TextFormField(
                           maxLength: 40,
+                          textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -316,7 +322,7 @@ class _AddPostState extends State<AddPost> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            AzakhanaName = value;
+                            AzakhanaName = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty
@@ -329,6 +335,7 @@ class _AddPostState extends State<AddPost> {
                         ),
                         TextFormField(
                           maxLength: 40,
+                          textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
@@ -342,7 +349,7 @@ class _AddPostState extends State<AddPost> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            ScholarName = value;
+                            ScholarName = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty ? 'Enter Title' : null;
@@ -353,6 +360,7 @@ class _AddPostState extends State<AddPost> {
                         ),
                         TextFormField(
                           maxLines: null,
+                          textCapitalization: TextCapitalization.words,
                           cursorColor: Colors.blue,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
@@ -367,7 +375,7 @@ class _AddPostState extends State<AddPost> {
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            FullDescription = value;
+                            FullDescription = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty ? 'Enter Description' : null;
@@ -377,20 +385,21 @@ class _AddPostState extends State<AddPost> {
                           height: 10,
                         ),
                         TextFormField(
+                          textCapitalization: TextCapitalization.words,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18),
                           controller: SpecialNotesController,
                           keyboardType: TextInputType.text,
                           decoration: InputDecoration(
-                            hintText: "NO Notes (Write NO)",
+                            hintText: "Special Notes",
                             labelText: "Special Notes",
                             border: OutlineInputBorder(
                                 borderSide: BorderSide(color: Colors.white),
                                 borderRadius: BorderRadius.circular(15)),
                           ),
                           onChanged: (value) {
-                            SpecialNotes = value;
+                            SpecialNotes = value.trim();
                           },
                           validator: (value) {
                             return value!.trim().isEmpty ? 'Enter Special Notes' : null;
@@ -434,6 +443,10 @@ class _AddPostState extends State<AddPost> {
                                 setState(() {
                                   showSpinner = false;
                                 });
+                              }else if (_MajlisMehfil == "Select event"){
+                                Fluttertoast.showToast(
+                                    msg: "Please Select Event (Majlis,Mehfil,Event)",
+                                    backgroundColor: Color(hexColors("006064")));
                               }
                               else {
                                 if (_formkey.currentState!.validate()) {
@@ -441,9 +454,12 @@ class _AddPostState extends State<AddPost> {
                                       context: context,
                                       barrierDismissible: false,
                                       builder: (context) {
-                                        return Container(
-                                          child: Center(
-                                            child: CircularProgressIndicator(),
+                                        return WillPopScope(
+                                          onWillPop: () async => false,
+                                          child: Container(
+                                            child: Center(
+                                              child: CircularProgressIndicator(),
+                                            ),
                                           ),
                                         );
                                       });
@@ -465,10 +481,13 @@ class _AddPostState extends State<AddPost> {
   //Function for get image from gallery
   Future getGalleryImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
     setState(() {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         print("image path $_image");
+        print("Actual image size ${_image!.lengthSync()/1024}");
+
       } else {
         print("No image selected");
       }
@@ -597,22 +616,35 @@ class _AddPostState extends State<AddPost> {
     print(getUserId);
     print(getUserName);
 
+    //for compress image
+    var imageMB;
 
-    var stream = http.ByteStream(_image!.openRead());
+    if(_image!.lengthSync()/1024 > 600){
+      File compressedFile = await FlutterNativeImage.compressImage(_image!.path,
+          quality: 100, percentage: 20);
+      imageMB = compressedFile;
+      print("compressed image size ${compressedFile.lengthSync()/1024}");
+    }else{
+      imageMB = _image;
+      print("server image ${imageMB!.lengthSync()/1024}");
+    }
+
+    var stream = http.ByteStream(imageMB!.openRead());
     stream.cast();
-    var length = await _image!.length();
-    var url = Uri.parse("https://aeliya.000webhostapp.com/addPost.php");
+    var length = await imageMB!.length();
+    //var url = Uri.parse("https://aeliya.000webhostapp.com/addPost.php");
+    var url = Uri.parse("${masterUrl}addPost.php");
     var request = http.MultipartRequest('POST', url);
 
     request.fields['postId'] = getUserId.toString();
-    request.fields['azakhana_name'] = AzakhanaName!;
-    request.fields['city_name'] = CityName!;
-    request.fields['description'] = FullDescription!;
+    request.fields['azakhana_name'] = AzakhanaName!.removemoji;
+    request.fields['city_name'] = CityName!.removemoji;
+    request.fields['description'] = FullDescription!.removemoji;
     request.fields['end_date'] = EndDate!;
-    request.fields['name_of_schollar'] = ScholarName!;
+    request.fields['name_of_schollar'] = ScholarName!.removemoji;
     request.fields['postDateTime'] = _DateTimeNow!;
     request.fields['program_list'] = _MajlisMehfil!;
-    request.fields['special_notes'] = SpecialNotes!;
+    request.fields['special_notes'] = SpecialNotes!.removemoji;
     request.fields['start_date'] = StartDate!;
     request.fields['time'] = MajlisTime!;
     request.fields['user_name'] = getUserName.toString();
@@ -621,7 +653,7 @@ class _AddPostState extends State<AddPost> {
       'image',
       stream,
       length,
-      filename: _image!.path.toString(),
+      filename: imageMB!.path.toString(),
     );
     request.files.add(_multipart);
 
@@ -636,8 +668,8 @@ class _AddPostState extends State<AddPost> {
         // var token1 = sharepreference.getString('userToken');
         // await Future.delayed(Duration(seconds: 10));
       }));
-      sendNotification("${_MajlisMehfil}: ${ScholarName}",
-          "${AzakhanaName} ${StartDate} to ${EndDate} ${MajlisTime}");
+     /* sendNotification("${_MajlisMehfil}: ${ScholarName}",
+          "${AzakhanaName} ${StartDate} to ${EndDate} ${MajlisTime}");*/
       Fluttertoast.showToast(msg: "Your post is published",
           backgroundColor: Color(
               hexColors("006064")));
@@ -656,7 +688,7 @@ class _AddPostState extends State<AddPost> {
         Uri.parse("https://fcm.googleapis.com/fcm/send"),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+          'Authorization': "key=AAAAmvSnvys:APA91bFTY1y3nwky9ilhsMcR0EtIZriEK9B6NEX3QkPpTQ2EG_WMYcUzQTbgUnbZ2bq5wR4gomWm0X0Qio-d8eRj2YV6ybPbRqvWfSbAEqVnShdW6dN7qnZSwhRwauW14SxLYBwrb5K9"
         },
         body: jsonEncode(
           <String, dynamic>{

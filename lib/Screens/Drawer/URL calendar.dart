@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mahuva_azadari/Models/Round%20Button.dart';
+import 'package:mahuva_azadari/Screens/Drawer/PDF%20Calender.dart';
 import '../../Models/Hexa color.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,7 +15,7 @@ class URLCalender extends StatefulWidget {
 class _URLCalenderState extends State<URLCalender> {
   //https://ksijamat.org/calendar
 
-  final Uri _url = Uri.parse('https://ksijamat.org/calendar');
+  final Uri _url = Uri.parse('https://imam-us.org/imam-hijri-calendar');
 
   @override
   void initState() {
@@ -40,23 +41,24 @@ class _URLCalenderState extends State<URLCalender> {
             ),
             centerTitle: true,
           ),
-          body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
-            child: Center(
-              child: RoundButton(title: 'Load Calender',
-                onPress: () {
-                  // showDialog(
-                  //     context: context,
-                  //     barrierDismissible: false,
-                  //     builder: (context) {
-                  //       return Container(
-                  //         child: Center(
-                  //           child: CircularProgressIndicator(),
-                  //         ),
-                  //       );
-                  //     });
-                _launchUrl();
-                },),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  RoundButton(title: 'Load Calender',
+                    onPress: () {
+                    _launchUrl();
+                    },),
+                  SizedBox(height: 20,),
+                  RoundButton(title: 'PDF Bhavnagar Calendar',
+                    onPress: () {
+                        Navigator.push(context,
+                            MaterialPageRoute(builder: (context)=> Calender()));
+                    },),
+                ],
+              ),
             ),
           ),
 

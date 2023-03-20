@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:mahuva_azadari/Screens/Admin%20Data/AdminPannel.dart';
+import 'package:remove_emoji/remove_emoji.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../Models/Hexa color.dart';
 import '../../Models/Round Button.dart';
@@ -104,6 +105,7 @@ class _EditLinksState extends State<EditLinks> {
                           ),
                           SizedBox(height: 10,),
                           TextFormField(
+                            textCapitalization: TextCapitalization.words,
                             style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 //fontStyle: FontStyle.italic,
@@ -119,7 +121,7 @@ class _EditLinksState extends State<EditLinks> {
                                   borderRadius: BorderRadius.circular(15)),
                             ),
                             onChanged: (value) {
-                              City = value;
+                              City = value.trim();
                             },
                             validator: (value) {
                               return value!.isEmpty
@@ -161,9 +163,12 @@ class _EditLinksState extends State<EditLinks> {
                                       context: context,
                                       barrierDismissible: false,
                                       builder: (context) {
-                                        return Container(
-                                          child: Center(
-                                            child: CircularProgressIndicator(),
+                                        return WillPopScope(
+                                          onWillPop: () async => false,
+                                          child: Container(
+                                            child: Center(
+                                              child: CircularProgressIndicator(),
+                                            ),
                                           ),
                                         );
                                       });
@@ -194,7 +199,8 @@ class _EditLinksState extends State<EditLinks> {
 
 
 
-    var url = Uri.parse("https://aeliya.000webhostapp.com/updateLinks.php");
+    //var url = Uri.parse("https://aeliya.000webhostapp.com/updateLinks.php");
+    var url = Uri.parse("${masterUrl}updateLinks.php");
 
     Map mapeddate = {
       'ref_id': refid,
@@ -202,7 +208,7 @@ class _EditLinksState extends State<EditLinks> {
       'username': getUserName,
       'link':YoutubeLink,
       'postDateTime':_DateTimeNow,
-      'city': City
+      'city': City!.removemoji
     };
     print("JSON DATA : ${mapeddate}");
     http.Response response = await http.post(url, body: mapeddate);
@@ -215,10 +221,10 @@ class _EditLinksState extends State<EditLinks> {
       print("Data:- $data");
       Fluttertoast.showToast(msg: "Your post is updated",
           backgroundColor: Color(hexColors("006064")));
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminPannel()));
-
-      sendNotification("Update Live Progeam",
+    /*  sendNotification("Update Live Progeam",
           "${getUserName} ${City}");
+*/
+      Navigator.push(context, MaterialPageRoute(builder: (context)=>AdminPannel()));
 
     } else {
       print("failed");
@@ -237,7 +243,7 @@ class _EditLinksState extends State<EditLinks> {
         Uri.parse("https://fcm.googleapis.com/fcm/send"),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': "key=AAAAXFH7l3I:APA91bFNjc9LvV2YtlXUHlcUBa-OL_YdHOGl6zuTUe2REtScRnzTEO5yUU5BqAknmtul3Jqkdl0LLeh3a3QHeYe_vqYTeqYpWXqHr8A9TP63efERorEmnBj9vZ8hQxN2I8u6NCiPkKh3"
+          'Authorization': "key=AAAAmvSnvys:APA91bFTY1y3nwky9ilhsMcR0EtIZriEK9B6NEX3QkPpTQ2EG_WMYcUzQTbgUnbZ2bq5wR4gomWm0X0Qio-d8eRj2YV6ybPbRqvWfSbAEqVnShdW6dN7qnZSwhRwauW14SxLYBwrb5K9"
         },
         body: jsonEncode(
           <String, dynamic>{
